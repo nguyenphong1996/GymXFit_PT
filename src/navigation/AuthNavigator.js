@@ -7,21 +7,31 @@ import PTScheduleScreen from '@screens/booking/PTScheduleScreen';
 import HomePTScreen from '@screens/home/HomePTScreen'
 import PTLessonHistoryScreen from '@screens/workouts/PTLessonHistoryScreen';
 import PTLessonPlanScreen from '@screens/workouts/PTLessonPlanScreen';
+import PTProfileScreen from '@screens/profile/PTProfileScreen';
+import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
 
 
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="HomePTScreen"
+    initialRouteName="UpdatePTProfileScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
     <Stack.Screen name="VerifyLoginScreen" component={VerifyLoginScreen} />
     <Stack.Screen name="PTScheduleScreen" component={PTScheduleScreen} />
     <Stack.Screen name="HomePTScreen" component={HomePTScreen} />
-    <Stack.Screen name="PTLessonHistoryScreen" component={PTLessonHistoryScreen} />
+    <Stack.Screen
+      name="PTLessonHistoryScreen"
+      component={PTLessonHistoryScreen}
+    />
     <Stack.Screen name="PTLessonPlanScreen" component={PTLessonPlanScreen} />
+    <Stack.Screen name="PTProfileScreen" component={PTProfileScreen} />
+    <Stack.Screen
+      name="UpdatePTProfileScreen"
+      component={UpdatePTProfileScreen}
+    />
   </Stack.Navigator>
 );
 
