@@ -16,7 +16,7 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="HomePTScreen"
+    initialRouteName="LoginPTScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
@@ -33,7 +33,10 @@ const AuthNavigator = () => (
       name="UpdatePTProfileScreen"
       component={UpdatePTProfileScreen}
     />
-    <Stack.Screen name="PTCustomerListScreen" component={PTCustomerListScreen}/>
+    <Stack.Screen
+      name="PTCustomerListScreen"
+      component={PTCustomerListScreen}
+    />
   </Stack.Navigator>
 );
 
