@@ -13,17 +13,14 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 const HomePTScreen = ({ navigation }) => {
   React.useEffect(() => {
-    // Ẩn toàn bộ UI hệ thống khi vào màn hình
     StatusBar.setHidden(true);
     if (Platform.OS === 'android') SystemNavigationBar.stickyImmersive();
 
     return () => {
-      // Hiện lại khi rời màn hình
       if (Platform.OS === 'android') SystemNavigationBar.navigationShow();
     };
   }, []);
 
-  // 🟢 Danh sách các nút chức năng hợp lý cho PT
   const buttons = [
     { title: 'Hồ sơ PT', icon: 'person', screen: 'PTProfileScreen' },
     { title: 'Lịch PT', icon: 'calendar-today', screen: 'PTScheduleScreen' },
@@ -32,27 +29,35 @@ const HomePTScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Logo */}
-      <Image
-        source={require('@assets/images/logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      {/* Logo và tiêu đề */}
+      <View style={styles.header}>
+        <Image
+          source={require('@assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>GymXFit PT</Text>
+      </View>
 
-      {/* Tiêu đề */}
-      <Text style={styles.title}>Chào mừng PT!</Text>
-      <Text style={styles.subtitle}>Hãy chọn chức năng bạn muốn truy cập</Text>
+      <Text style={styles.subtitle}>Chào mừng bạn trở lại!</Text>
+      <Text style={styles.subnote}>
+        Chọn chức năng để bắt đầu công việc hôm nay
+      </Text>
 
-      {/* Danh sách nút chức năng */}
+      {/* Các nút chức năng */}
       <View style={styles.buttonContainer}>
         {buttons.map((btn, index) => (
           <TouchableOpacity
             key={index}
             style={styles.menuButton}
             onPress={() => navigation.navigate(btn.screen)}
+            activeOpacity={0.85}
           >
-            <Icon name={btn.icon} size={24} color="#fff" style={styles.menuIcon} />
+            <View style={styles.iconWrapper}>
+              <Icon name={btn.icon} size={26} color="#20B24A" />
+            </View>
             <Text style={styles.menuText}>{btn.title}</Text>
+            <Icon name="arrow-forward-ios" size={18} color="#888" />
           </TouchableOpacity>
         ))}
       </View>
@@ -65,44 +70,69 @@ export default HomePTScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAF9',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 12,
   },
   logo: {
-    width: 180,
-    height: 80,
-    marginBottom: 20,
+    width: 150,
+    height: 60,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#20B24A',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#555',
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 4,
+  },
+  subnote: {
+    fontSize: 14,
+    color: '#777',
+    marginBottom: 28,
+    textAlign: 'center',
   },
   buttonContainer: {
     width: '100%',
-    gap: 15,
+    gap: 16,
   },
   menuButton: {
     flexDirection: 'row',
-    backgroundColor: '#20B24A',
-    padding: 14,
-    borderRadius: 10,
     alignItems: 'center',
-    elevation: 2,
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  menuIcon: {
-    marginRight: 12,
+  iconWrapper: {
+    width: 46,
+    height: 46,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
   },
   menuText: {
-    color: '#fff',
-    fontSize: 18,
+    flex: 1,
+    color: '#000',
+    fontSize: 17,
     fontWeight: '700',
   },
 });
