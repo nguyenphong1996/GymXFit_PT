@@ -9,13 +9,14 @@ import PTLessonHistoryScreen from '@screens/workouts/PTLessonHistoryScreen';
 import PTLessonPlanScreen from '@screens/workouts/PTLessonPlanScreen';
 import PTProfileScreen from '@screens/profile/PTProfileScreen';
 import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
+import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
 
 
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="UpdatePTProfileScreen"
+    initialRouteName="HomePTScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
@@ -32,6 +33,7 @@ const AuthNavigator = () => (
       name="UpdatePTProfileScreen"
       component={UpdatePTProfileScreen}
     />
+    <Stack.Screen name="PTCustomerListScreen" component={PTCustomerListScreen}/>
   </Stack.Navigator>
 );
 
