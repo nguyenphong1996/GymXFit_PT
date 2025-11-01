@@ -5,19 +5,36 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const PTProfileScreen = ({ navigation }) => {
+  const handleLogout = () => {
+    Alert.alert('Xác nhận đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: () => navigation.replace('LoginScreen'),
+      },
+    ]);
+  };
+
+  const handleEditProfile = () => {
+    navigation.navigate('UpdatePTProfileScreen');
+  };
+
+  const handleGoHome = () => {
+    navigation.navigate('HomePTScreen');
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar hidden />
 
       {/* 🔙 Nút quay lại */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
+      <TouchableOpacity style={styles.backButton} onPress={handleGoHome}>
         <Icon name="arrow-back" size={26} color="#000" />
       </TouchableOpacity>
 
@@ -42,9 +59,15 @@ const PTProfileScreen = ({ navigation }) => {
       </View>
 
       {/* ✏️ Nút chỉnh sửa */}
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleEditProfile}>
         <Icon name="edit" size={20} color="#fff" />
         <Text style={styles.buttonText}>Chỉnh sửa hồ sơ</Text>
+      </TouchableOpacity>
+
+      {/* 🚪 Nút đăng xuất */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Icon name="logout" size={20} color="#fff" />
+        <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
     </View>
   );
@@ -112,6 +135,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 15,
+    backgroundColor: '#E53935',
+    paddingVertical: 14,
+    borderRadius: 10,
+    width: '80%',
+    justifyContent: 'center',
+  },
+  logoutText: {
     color: '#fff',
     fontSize: 17,
     fontWeight: '700',

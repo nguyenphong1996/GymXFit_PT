@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
-  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -17,18 +16,20 @@ const gap = 8;
 const boxSize = (width - paddingHorizontal * 2 - gap * 6) / 7;
 
 const PTScheduleScreen = ({ navigation }) => {
-  const [mode, setMode] = useState('week'); // 🔹 Mặc định là tuần
+  // ✅ Hook luôn ở đầu — không đặt trong điều kiện nào
+  const [mode, setMode] = useState('week');
   const [displayedDate, setDisplayedDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [shiftData, setShiftData] = useState({});
-  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const shifts = [
-    { id: 1, time: 'Ca 1: 6h - 9h' },
-    { id: 2, time: 'Ca 2: 9h - 12h' },
-    { id: 3, time: 'Ca 3: 13h - 16h' },
-    { id: 4, time: 'Ca 4: 17h - 20h' },
-  ];
+  // 📢 Dữ liệu demo thông báo công việc
+  const notifications = useMemo(
+    () => ({
+      '2025-11-01': 'Buổi sáng: Dẫn nhóm tập tạ ngực. Chiều: Họp PT lúc 17h.',
+      '2025-11-02': 'Ca 1: Kiểm tra sức khỏe học viên mới. Ca 3: Nghỉ.',
+      '2025-11-03': 'Buổi sáng: Hướng dẫn kỹ thuật Squat cho nhóm B.',
+    }),
+    [],
+  );
 
   const getMonthName = m =>
     [
@@ -53,96 +54,65 @@ const PTScheduleScreen = ({ navigation }) => {
     return days[d.getDay()];
   };
 
-  // 🗓️ Tính thông tin tháng
-  const { year, month } = useMemo(
-    () => ({
-      year: displayedDate.getFullYear(),
-      month: displayedDate.getMonth(),
-    }),
-    [displayedDate],
-  );
-
+  // 🗓️ Thông tin tháng hiện tại
+  const year = displayedDate.getFullYear();
+  const month = displayedDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
 
-  // ✅ Lịch tháng (đủ 7 cột/hàng)
+  // ✅ Tạo danh sách ngày trong tháng (đảm bảo đủ 7 cột/hàng)
   const monthDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
     const remainder = days.length % 7;
     if (remainder !== 0) {
-      const emptyEnd = 7 - remainder;
-      for (let i = 0; i < emptyEnd; i++) days.push(null);
+      for (let i = 0; i < 7 - remainder; i++) days.push(null);
     }
     return days;
   }, [year, month]);
 
-  // 🗓️ Lịch tuần
+  // 🗓️ Tạo danh sách 7 ngày trong tuần
   const weekDays = useMemo(() => {
     const current = new Date(displayedDate);
     const start = new Date(current);
     start.setDate(current.getDate() - current.getDay());
-    const days = [];
-    for (let i = 0; i < 7; i++) {
+    return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      days.push(d);
-    }
-    return days;
+      return d;
+    });
   }, [displayedDate]);
 
   const handleSelectDay = day => {
-    setSelectedDate(day);
-    setModalVisible(true);
-  };
-
-  const handleReceiveShift = id => {
-    const key = selectedDate.toDateString();
-    const current = shiftData[key] || [];
-    if (!current.includes(id)) {
-      setShiftData(prev => ({
-        ...prev,
-        [key]: [...current, id],
-      }));
-    }
+    if (day) setSelectedDate(day);
   };
 
   const handlePrev = () => {
     const newDate = new Date(displayedDate);
-    if (mode === 'month') newDate.setMonth(displayedDate.getMonth() - 1);
+    if (mode === 'month') newDate.setMonth(month - 1);
     else newDate.setDate(displayedDate.getDate() - 7);
     setDisplayedDate(newDate);
   };
 
   const handleNext = () => {
     const newDate = new Date(displayedDate);
-    if (mode === 'month') newDate.setMonth(displayedDate.getMonth() + 1);
+    if (mode === 'month') newDate.setMonth(month + 1);
     else newDate.setDate(displayedDate.getDate() + 7);
     setDisplayedDate(newDate);
   };
 
-  // 📋 Chỉ hiển thị ca đã nhận của ngày được chọn
-  const receivedList = useMemo(() => {
-    if (!selectedDate) return [];
-    const key = selectedDate.toDateString();
-    const receivedShiftIds = shiftData[key] || [];
-    const shiftNames = receivedShiftIds.map(
-      id => shifts.find(s => s.id === id)?.time,
-    );
-    return shiftNames.length > 0
-      ? [
-          {
-            date: `${selectedDate.getDate()}/${
-              selectedDate.getMonth() + 1
-            }/${selectedDate.getFullYear()}`,
-            shifts: shiftNames,
-          },
-        ]
-      : [];
-  }, [selectedDate, shiftData]);
-
   const today = new Date();
+
+  const formatDateKey = date => {
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      '0',
+    )}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const selectedNotice = notifications[formatDateKey(selectedDate)] || '';
 
   return (
     <View style={styles.container}>
@@ -162,7 +132,7 @@ const PTScheduleScreen = ({ navigation }) => {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-        {/* 🔹 Thanh điều hướng tháng/tuần */}
+        {/* 🔹 Điều hướng tháng / tuần */}
         <View style={styles.monthHeader}>
           <TouchableOpacity onPress={handlePrev}>
             <Icon name="chevron-left" size={30} color="#000" />
@@ -208,7 +178,7 @@ const PTScheduleScreen = ({ navigation }) => {
                   month === today.getMonth() &&
                   year === today.getFullYear();
                 const isSelected =
-                  selectedDate &&
+                  day &&
                   selectedDate.getDate() === day &&
                   selectedDate.getMonth() === month &&
                   selectedDate.getFullYear() === year;
@@ -246,105 +216,48 @@ const PTScheduleScreen = ({ navigation }) => {
           </View>
         ) : (
           <View style={styles.weekContainer}>
-            {weekDays.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.weekDayBox,
-                  selectedDate?.toDateString() === item.toDateString() &&
-                    styles.selectedDayBox,
-                ]}
-                onPress={() => handleSelectDay(item)}
-              >
-                <Text
-                  style={[
-                    styles.dayText,
-                    selectedDate?.toDateString() === item.toDateString() && {
-                      color: '#fff',
-                    },
-                  ]}
-                >
-                  {getDayLabel(item)}
-                </Text>
-                <Text
-                  style={[
-                    styles.dayText,
-                    selectedDate?.toDateString() === item.toDateString() && {
-                      color: '#fff',
-                    },
-                  ]}
-                >
-                  {item.getDate()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* 📋 Danh sách ca đã nhận (chỉ trong ngày được chọn) */}
-        {receivedList.length > 0 && (
-          <View style={styles.receivedContainer}>
-            <Text style={styles.receivedTitle}>Ca làm đã nhận</Text>
-            {receivedList.map((item, idx) => (
-              <View key={idx} style={styles.receivedItem}>
-                <Text style={styles.receivedDate}>{item.date}</Text>
-                {item.shifts.map((shift, i) => (
-                  <Text key={i} style={styles.receivedShift}>
-                    • {shift}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* 🔹 Modal chọn ca */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
-              {selectedDate
-                ? `Ngày ${selectedDate.getDate()} (${getDayLabel(
-                    selectedDate,
-                  )})`
-                : 'Chọn ngày'}
-            </Text>
-
-            {shifts.map(shift => {
-              const key = selectedDate?.toDateString();
-              const received = shiftData[key]?.includes(shift.id);
+            {weekDays.map((item, index) => {
+              const isSelected =
+                selectedDate.toDateString() === item.toDateString();
               return (
                 <TouchableOpacity
-                  key={shift.id}
+                  key={index}
                   style={[
-                    styles.shiftBox,
-                    received && { backgroundColor: '#20B24A' },
+                    styles.weekDayBox,
+                    isSelected && styles.selectedDayBox,
                   ]}
-                  onPress={() => !received && handleReceiveShift(shift.id)}
-                  disabled={received}
+                  onPress={() => handleSelectDay(item)}
                 >
                   <Text
-                    style={[styles.shiftText, received && { color: '#fff' }]}
+                    style={[styles.dayText, isSelected && { color: '#fff' }]}
                   >
-                    {shift.time}
+                    {getDayLabel(item)}
                   </Text>
-                  {received && (
-                    <Icon name="check-circle" size={20} color="#fff" />
-                  )}
+                  <Text
+                    style={[styles.dayText, isSelected && { color: '#fff' }]}
+                  >
+                    {item.getDate()}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
+          </View>
+        )}
 
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeText}>Đóng</Text>
-            </TouchableOpacity>
+        {/* 📢 Thông báo công việc */}
+        <View style={styles.noticeContainer}>
+          <Text style={styles.noticeTitle}>Thông báo công việc</Text>
+          <View style={styles.noticeBox}>
+            {selectedNotice ? (
+              <Text style={styles.noticeText}>{selectedNotice}</Text>
+            ) : (
+              <Text style={styles.noticeEmpty}>
+                (Chưa có thông báo công việc cho ngày này)
+              </Text>
+            )}
           </View>
         </View>
-      </Modal>
+      </ScrollView>
     </View>
   );
 };
@@ -406,10 +319,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#E8F5E9',
   },
-  todayBox: {
-    borderWidth: 2,
-    borderColor: '#20B24A',
-  },
+  todayBox: { borderWidth: 2, borderColor: '#20B24A' },
   selectedDayBox: { backgroundColor: '#20B24A' },
   emptyBox: { width: '100%', height: '100%' },
   weekContainer: {
@@ -426,65 +336,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
   },
   dayText: { fontSize: 15, fontWeight: '600', color: '#000' },
-  receivedContainer: {
+  noticeContainer: {
     marginTop: 20,
     marginHorizontal: 16,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#20B24A',
   },
-  receivedTitle: {
+  noticeTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#20B24A',
     marginBottom: 8,
   },
-  receivedItem: {
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingBottom: 6,
-  },
-  receivedDate: { fontSize: 15, fontWeight: '700', color: '#000' },
-  receivedShift: { fontSize: 14, color: '#333', marginLeft: 10 },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBox: {
-    width: '85%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 10,
-    color: '#000',
-    textAlign: 'center',
-  },
-  shiftBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  noticeBox: {
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
     borderColor: '#20B24A',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+    borderRadius: 12,
+    padding: 14,
   },
-  shiftText: { fontSize: 16, fontWeight: '600', color: '#000' },
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: '#20B24A',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
+  noticeText: { fontSize: 15, color: '#000', lineHeight: 22 },
+  noticeEmpty: {
+    fontSize: 15,
+    color: '#666',
+    fontStyle: 'italic',
   },
-  closeText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

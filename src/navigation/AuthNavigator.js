@@ -12,11 +12,12 @@ import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
 
 
+
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="PTScheduleScreen"
+    initialRouteName="HomePTScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
@@ -37,6 +38,7 @@ const AuthNavigator = () => (
       name="PTCustomerListScreen"
       component={PTCustomerListScreen}
     />
+   
   </Stack.Navigator>
 );
 
