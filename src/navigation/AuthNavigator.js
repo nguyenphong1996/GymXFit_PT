@@ -18,7 +18,7 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="QrScannerModal"
+    initialRouteName="PTProfileScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />

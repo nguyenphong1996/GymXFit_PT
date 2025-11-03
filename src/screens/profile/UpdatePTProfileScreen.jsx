@@ -1,5 +1,5 @@
 // 📁 src/screens/PT/UpdatePTProfileScreen.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,31 +8,26 @@ import {
   Image,
   TextInput,
   ScrollView,
-  Alert,
-  ActivityIndicator,
   SafeAreaView,
+  ActivityIndicator,
   Dimensions,
+  Alert,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { updatePTProfile, updateAvatar } from '@api/userApi';
-import { UserContext } from '@context/UserContext';
 
 const { width } = Dimensions.get('window');
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
 
 const UpdatePTProfileScreen = ({ navigation }) => {
-  const { user, refreshUser } = useContext(UserContext);
-
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [experience, setExperience] = useState(
-    user?.experience?.toString() || '',
-  );
-  const [specialty, setSpecialty] = useState(user?.specialty || '');
-  const [bio, setBio] = useState(user?.bio || '');
+  const [name, setName] = useState('Huấn luyện viên Nguyễn Văn Nam');
+  const [email, setEmail] = useState('namfit@example.com');
+  const [phone] = useState('0909 123 456');
+  const [experience, setExperience] = useState('5');
+  const [skills, setSkills] = useState('Workout, Cardio, Stretching');
+  const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleChooseAvatar = async () => {
@@ -43,58 +38,33 @@ const UpdatePTProfileScreen = ({ navigation }) => {
     if (result.didCancel) return;
     const image = result.assets?.[0];
     if (!image) return;
-    setLoading(true);
-    try {
-      await updateAvatar(image);
-      await refreshUser();
-      Alert.alert('✅ Thành công', 'Ảnh đại diện đã được cập nhật!');
-    } catch {
-      Alert.alert('❌ Lỗi', 'Không thể cập nhật ảnh đại diện.');
-    } finally {
-      setLoading(false);
-    }
+    setAvatar(image.uri);
+    Alert.alert('✅ Thành công', 'Ảnh đại diện đã được chọn.');
   };
 
-  const handleUpdate = async () => {
-    if (!name.trim()) {
-      Alert.alert('⚠️ Thiếu thông tin', 'Vui lòng nhập họ và tên!');
-      return;
-    }
-    setLoading(true);
-    try {
-      await updatePTProfile({
-        name,
-        email,
-        experience: parseInt(experience) || 0,
-        specialty,
-        bio,
-      });
-      await refreshUser();
-      Alert.alert('✅ Thành công', 'Hồ sơ huấn luyện viên đã được cập nhật.');
-      navigation.goBack();
-    } catch {
-      Alert.alert('❌ Lỗi', 'Không thể cập nhật hồ sơ.');
-    } finally {
-      setLoading(false);
-    }
+  const handleUpdate = () => {
+    Alert.alert('✅ Thành công', 'Hồ sơ PT đã được cập nhật (demo).');
+    navigation.goBack();
   };
 
-  const avatarSource = user?.avatar
-    ? { uri: `${user.avatar}?timestamp=${Date.now()}` }
+  const avatarSource = avatar
+    ? { uri: avatar }
     : require('@assets/images/avt.png');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={26} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Profile</Text>
+          <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
         </View>
 
-        {/* Banner */}
+        {/* 🟩 Banner (đồng nhất với PTProfileScreen) */}
         <View style={styles.banner}>
           <View style={styles.avatarContainer}>
             <Image source={avatarSource} style={styles.avatar} />
@@ -105,28 +75,26 @@ const UpdatePTProfileScreen = ({ navigation }) => {
               <Icon name="photo-camera" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.name}>{name || 'Huấn luyện viên'}</Text>
+
+          <Text style={styles.name}>{name}</Text>
           <Text style={styles.email}>{email}</Text>
-          <Text style={styles.subText}>
-            Kinh nghiệm: {experience || '0'} năm
-          </Text>
 
           <View style={styles.infoBox}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoValue}>{experience || '0'}</Text>
-              <Text style={styles.infoLabel}>Năm KN</Text>
+              <Text style={styles.infoValue}>
+                {skills.split(',')[0]?.trim() || '---'}
+              </Text>
+              <Text style={styles.infoLabel}>Chuyên môn</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoItem}>
-              <Text style={styles.infoValue}>
-                {specialty?.length ? specialty.split(',')[0] : '---'}
-              </Text>
-              <Text style={styles.infoLabel}>Chuyên môn</Text>
+              <Text style={styles.infoValue}>{experience} năm</Text>
+              <Text style={styles.infoLabel}>Kinh nghiệm</Text>
             </View>
           </View>
         </View>
 
-        {/* Form */}
+        {/* 🧾 Form chỉnh sửa */}
         <View style={styles.form}>
           <Text style={styles.label}>Họ và tên</Text>
           <TextInput
@@ -161,21 +129,12 @@ const UpdatePTProfileScreen = ({ navigation }) => {
             keyboardType="numeric"
           />
 
-          <Text style={styles.label}>Chuyên môn</Text>
+          <Text style={styles.label}>Kỹ năng chuyên môn</Text>
           <TextInput
             style={styles.input}
-            placeholder="VD: Giảm cân, tăng cơ..."
-            value={specialty}
-            onChangeText={setSpecialty}
-          />
-
-          <Text style={styles.label}>Giới thiệu bản thân</Text>
-          <TextInput
-            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-            placeholder="Hãy viết vài dòng về bản thân..."
-            value={bio}
-            onChangeText={setBio}
-            multiline
+            placeholder="VD: Workout, Cardio, Stretching..."
+            value={skills}
+            onChangeText={setSkills}
           />
 
           <TouchableOpacity
@@ -197,10 +156,12 @@ const UpdatePTProfileScreen = ({ navigation }) => {
 
 export default UpdatePTProfileScreen;
 
+/* === STYLES === */
 const styles = StyleSheet.create({
   scrollContainer: {
     paddingBottom: 40,
   },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -213,13 +174,15 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 10,
   },
+
+  // 🟩 Banner giống hệt PTProfileScreen
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
-    paddingVertical: 25,
+    paddingVertical: 30,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   avatarContainer: {
     position: 'relative',
@@ -246,50 +209,54 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#222',
     marginTop: 5,
   },
   email: {
     fontSize: 14,
     color: '#555',
-  },
-  subText: {
-    fontSize: 14,
-    color: '#777',
     marginBottom: 10,
   },
+
   infoBox: {
     flexDirection: 'row',
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 12,
-    marginTop: 8,
     paddingVertical: 8,
     paddingHorizontal: 15,
+    width: '85%',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   infoItem: {
     alignItems: 'center',
     flex: 1,
   },
+  infoValue: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  infoLabel: {
+    color: '#E8F9EF',
+    fontSize: 13,
+    marginTop: 3,
+    textAlign: 'center',
+  },
   divider: {
     width: 1,
     height: 24,
     backgroundColor: '#fff',
-    marginHorizontal: 10,
+    opacity: 0.9,
+    marginHorizontal: 5,
   },
-  infoValue: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  infoLabel: {
-    color: '#fff',
-    fontSize: 13,
-  },
+
+  // 🧾 Form chỉnh sửa
   form: {
     paddingHorizontal: 20,
-    marginTop: 15,
+    marginTop: 10,
   },
   label: {
     fontSize: 14,

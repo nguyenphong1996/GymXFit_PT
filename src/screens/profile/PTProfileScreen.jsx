@@ -20,20 +20,25 @@ const LIGHT_GREEN = '#E8F9EF';
 const PTProfileScreen = () => {
   const navigation = useNavigation();
 
+  // 🔹 Dữ liệu mẫu (hiển thị tĩnh)
   const ptData = {
     name: 'Huấn luyện viên Nguyễn Văn Nam',
     email: 'namfit@example.com',
-    specialty: 'Giảm cân & Dinh dưỡng',
+    phone: '0909 123 456',
+    skills: ['Workout', 'Cardio', 'Stretching', 'Nutrition', 'Yoga'],
     experience: '5 năm',
-    students: 28,
     avatar: null,
   };
+
+  // Lấy 1 chuyên môn (nếu có) — ưu tiên phần tử đầu, nếu không có thì hiển thị 'Chưa có'
+  const specialty =
+    ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
 
   return (
     <ScrollView style={styles.container}>
       <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
 
-      {/* 🟩 Header */}
+      {/* 🟩 Banner */}
       <View style={styles.banner}>
         <View style={styles.avatarContainer}>
           {ptData.avatar ? (
@@ -50,11 +55,9 @@ const PTProfileScreen = () => {
 
         {/* 🟢 Info Stats */}
         <View style={styles.infoBox}>
-          <InfoStat label="Chuyên môn" value={ptData.specialty} />
+          <InfoStat label="Chuyên môn" value={specialty} />
           <View style={styles.divider} />
           <InfoStat label="Kinh nghiệm" value={ptData.experience} />
-          <View style={styles.divider} />
-          <InfoStat label="Học viên" value={ptData.students} />
         </View>
       </View>
 
@@ -70,33 +73,30 @@ const PTProfileScreen = () => {
           iconLib="Ion"
           icon="calendar-outline"
           text="Lịch làm việc"
-          onPress={() => navigation.navigate('PTScheduleScreen')}
+          onPress={() => {}}
         />
         <OptionItem
           iconLib="MI"
           icon="group"
           text="Danh sách học viên"
-          onPress={() => navigation.navigate('PTMemberList')}
+          onPress={() => {}}
         />
         <OptionItem
           iconLib="Ion"
           icon="document-text-outline"
           text="Hợp đồng huấn luyện"
-          onPress={() => navigation.navigate('PTContracts')}
+          onPress={() => {}}
         />
         <OptionItem
           iconLib="Ion"
           icon="key-outline"
           text="Đổi mật khẩu"
-          onPress={() => navigation.navigate('ChangePassword')}
+          onPress={() => {}}
         />
       </View>
 
       {/* 🔴 Nút đăng xuất */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() => navigation.navigate('LoginScreen')}
-      >
+      <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
         <IconMI
           name="logout"
           size={22}
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
-    paddingVertical: 35,
+    paddingVertical: 30,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
     marginBottom: 15,
@@ -170,21 +170,32 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     backgroundColor: PRIMARY_COLOR,
-    borderRadius: 14,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 8,
     paddingHorizontal: 15,
     width: '85%',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   statBox: { alignItems: 'center', flex: 1 },
-  statValue: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  statLabel: { color: '#E8F9EF', fontSize: 13, marginTop: 3 },
+  statValue: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  statLabel: {
+    color: '#E8F9EF',
+    fontSize: 13,
+    marginTop: 3,
+    textAlign: 'center',
+  },
   divider: {
     width: 1,
-    height: 25,
+    height: 24,
     backgroundColor: '#fff',
-    opacity: 0.8,
+    opacity: 0.9,
+    marginHorizontal: 5,
   },
 
   optionContainer: { marginTop: 10, paddingHorizontal: 20 },
