@@ -10,23 +10,29 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
-  Dimensions,
   Alert,
   StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-const { width } = Dimensions.get('window');
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
+
+const SKILL_OPTIONS = [
+  'Workout',
+  'Cardio',
+  'Stretching',
+  'Nutrition',
+  'Yoga',
+  'Other',
+];
 
 const UpdatePTProfileScreen = ({ navigation }) => {
   const [name, setName] = useState('Huấn luyện viên Nguyễn Văn Nam');
   const [email, setEmail] = useState('namfit@example.com');
   const [phone] = useState('0909 123 456');
-  const [experience, setExperience] = useState('5');
-  const [skills, setSkills] = useState('Workout, Cardio, Stretching');
+  const [selectedSkills, setSelectedSkills] = useState(['Workout', 'Cardio']);
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +46,12 @@ const UpdatePTProfileScreen = ({ navigation }) => {
     if (!image) return;
     setAvatar(image.uri);
     Alert.alert('✅ Thành công', 'Ảnh đại diện đã được chọn.');
+  };
+
+  const handleToggleSkill = skill => {
+    setSelectedSkills(prev =>
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill],
+    );
   };
 
   const handleUpdate = () => {
@@ -64,7 +76,7 @@ const UpdatePTProfileScreen = ({ navigation }) => {
           <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
         </View>
 
-        {/* 🟩 Banner (đồng nhất với PTProfileScreen) */}
+        {/* 🟩 Banner */}
         <View style={styles.banner}>
           <View style={styles.avatarContainer}>
             <Image source={avatarSource} style={styles.avatar} />
@@ -80,17 +92,10 @@ const UpdatePTProfileScreen = ({ navigation }) => {
           <Text style={styles.email}>{email}</Text>
 
           <View style={styles.infoBox}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoValue}>
-                {skills.split(',')[0]?.trim() || '---'}
-              </Text>
-              <Text style={styles.infoLabel}>Chuyên môn</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.infoItem}>
-              <Text style={styles.infoValue}>{experience} năm</Text>
-              <Text style={styles.infoLabel}>Kinh nghiệm</Text>
-            </View>
+            <Text style={styles.infoValue}>
+              {selectedSkills[0] || 'Chưa có'}
+            </Text>
+            <Text style={styles.infoLabel}>Chuyên môn</Text>
           </View>
         </View>
 
@@ -120,22 +125,29 @@ const UpdatePTProfileScreen = ({ navigation }) => {
             editable={false}
           />
 
-          <Text style={styles.label}>Kinh nghiệm (năm)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập số năm kinh nghiệm"
-            value={experience}
-            onChangeText={setExperience}
-            keyboardType="numeric"
-          />
-
           <Text style={styles.label}>Kỹ năng chuyên môn</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="VD: Workout, Cardio, Stretching..."
-            value={skills}
-            onChangeText={setSkills}
-          />
+          <View style={styles.checkboxContainer}>
+            {SKILL_OPTIONS.map(skill => {
+              const selected = selectedSkills.includes(skill);
+              return (
+                <TouchableOpacity
+                  key={skill}
+                  style={styles.checkboxItem}
+                  onPress={() => handleToggleSkill(skill)}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selected && { backgroundColor: PRIMARY_COLOR },
+                    ]}
+                  >
+                    {selected && <Icon name="check" size={16} color="#fff" />}
+                  </View>
+                  <Text style={styles.checkboxLabel}>{skill}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <TouchableOpacity
             style={[styles.saveButton, loading && { opacity: 0.7 }]}
@@ -158,9 +170,7 @@ export default UpdatePTProfileScreen;
 
 /* === STYLES === */
 const styles = StyleSheet.create({
-  scrollContainer: {
-    paddingBottom: 40,
-  },
+  scrollContainer: { paddingBottom: 40 },
 
   header: {
     flexDirection: 'row',
@@ -175,7 +185,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 
-  // 🟩 Banner giống hệt PTProfileScreen
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
@@ -184,10 +193,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 25,
     marginBottom: 15,
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 10,
-  },
+  avatarContainer: { position: 'relative', marginBottom: 10 },
   avatar: {
     width: 120,
     height: 120,
@@ -207,31 +213,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#222',
-    marginTop: 5,
-  },
-  email: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
-  },
+  name: { fontSize: 20, fontWeight: '700', color: '#222', marginTop: 5 },
+  email: { fontSize: 14, color: '#555', marginBottom: 10 },
 
   infoBox: {
-    flexDirection: 'row',
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     width: '85%',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  infoItem: {
-    alignItems: 'center',
-    flex: 1,
   },
   infoValue: {
     color: '#fff',
@@ -245,19 +236,8 @@ const styles = StyleSheet.create({
     marginTop: 3,
     textAlign: 'center',
   },
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#fff',
-    opacity: 0.9,
-    marginHorizontal: 5,
-  },
 
-  // 🧾 Form chỉnh sửa
-  form: {
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
+  form: { paddingHorizontal: 20, marginTop: 10 },
   label: {
     fontSize: 14,
     color: '#333',
@@ -274,6 +254,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#222',
   },
+
+  checkboxContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 5,
+  },
+  checkboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+    marginBottom: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: PRIMARY_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  checkboxLabel: { fontSize: 14, color: '#333' },
+
   saveButton: {
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 30,
@@ -281,9 +286,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

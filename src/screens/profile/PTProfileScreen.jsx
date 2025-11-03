@@ -26,11 +26,9 @@ const PTProfileScreen = () => {
     email: 'namfit@example.com',
     phone: '0909 123 456',
     skills: ['Workout', 'Cardio', 'Stretching', 'Nutrition', 'Yoga'],
-    experience: '5 năm',
     avatar: null,
   };
 
-  // Lấy 1 chuyên môn (nếu có) — ưu tiên phần tử đầu
   const specialty =
     ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
 
@@ -53,11 +51,12 @@ const PTProfileScreen = () => {
         <Text style={styles.name}>{ptData.name}</Text>
         <Text style={styles.email}>{ptData.email}</Text>
 
-        {/* 🟢 Info Stats */}
+        {/* 🟢 Info Box (Chuyên môn) */}
         <View style={styles.infoBox}>
-          <InfoStat label="Chuyên môn" value={specialty} />
-          <View style={styles.divider} />
-          <InfoStat label="Kinh nghiệm" value={ptData.experience} />
+          <View style={styles.statBoxFull}>
+            <Text style={styles.statValue}>{specialty}</Text>
+            <Text style={styles.statLabel}>Chuyên môn</Text>
+          </View>
         </View>
       </View>
 
@@ -102,14 +101,6 @@ const PTProfileScreen = () => {
     </ScrollView>
   );
 };
-
-/* === COMPONENT: InfoStat === */
-const InfoStat = ({ label, value }) => (
-  <View style={styles.statBox}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
 
 /* === COMPONENT: OptionItem === */
 const OptionItem = ({ iconLib, icon, text, onPress }) => {
@@ -161,17 +152,16 @@ const styles = StyleSheet.create({
   },
   email: { fontSize: 14, color: '#555', marginBottom: 10 },
 
+  /* ✅ Đồng bộ CSS vùng xanh với UpdatePTProfileScreen */
   infoBox: {
-    flexDirection: 'row',
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     width: '85%',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statBox: { alignItems: 'center', flex: 1 },
+  statBoxFull: { alignItems: 'center', width: '100%' },
   statValue: {
     color: '#fff',
     fontWeight: 'bold',
@@ -183,13 +173,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 3,
     textAlign: 'center',
-  },
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#fff',
-    opacity: 0.9,
-    marginHorizontal: 5,
   },
 
   optionContainer: { marginTop: 10, paddingHorizontal: 20 },
