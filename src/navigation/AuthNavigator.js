@@ -10,6 +10,7 @@ import PTLessonPlanScreen from '@screens/workouts/PTLessonPlanScreen';
 import PTProfileScreen from '@screens/profile/PTProfileScreen';
 import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
+import QrScannerModal from '@screens/qr/QrScannerModal';
 
 
 
@@ -17,7 +18,7 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="HomePTScreen"
+    initialRouteName="QrScannerModal"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
@@ -38,7 +39,7 @@ const AuthNavigator = () => (
       name="PTCustomerListScreen"
       component={PTCustomerListScreen}
     />
-   
+    <Stack.Screen name="QrScannerModal" component={QrScannerModal} />
   </Stack.Navigator>
 );
 

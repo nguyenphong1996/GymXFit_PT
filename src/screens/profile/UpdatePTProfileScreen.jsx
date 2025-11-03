@@ -1,370 +1,322 @@
-import React, { useState, useEffect, useContext } from 'react';
+// 📁 src/screens/PT/UpdatePTProfileScreen.jsx
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
-  Image,
+  StyleSheet,
   TouchableOpacity,
+  Image,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
-  StyleSheet,
-  Platform,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
-import { UserContext } from '@context/UserContext';
-import { updatePTProfile, updateAvatar } from '@api/userApi';
-import { launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { updatePTProfile, updateAvatar } from '@api/userApi';
+import { UserContext } from '@context/UserContext';
+
+const { width } = Dimensions.get('window');
+const PRIMARY_COLOR = '#30C451';
+const LIGHT_GREEN = '#E8F9EF';
 
 const UpdatePTProfileScreen = ({ navigation }) => {
-  const androidBehavior = Platform.OS === 'android' ? 'height' : undefined;
   const { user, refreshUser } = useContext(UserContext);
 
-  const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    experience: '',
-    specialty: '',
-    bio: '',
-  });
-
-  const [avatarSource, setAvatarSource] = useState(
-    require('@assets/images/avt.png'),
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [experience, setExperience] = useState(
+    user?.experience?.toString() || '',
   );
-  const [isFetching, setIsFetching] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [specialty, setSpecialty] = useState(user?.specialty || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      setProfileData({
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        experience: user.experience ? String(user.experience) : '',
-        specialty: user.specialty || '',
-        bio: user.bio || '',
-      });
-      if (user.avatar) {
-        setAvatarSource({ uri: `${user.avatar}?timestamp=${Date.now()}` });
-      }
-    }
-    setIsFetching(false);
-  }, [user]);
-
-  const handleInputChange = (field, value) =>
-    setProfileData(prev => ({ ...prev, [field]: value }));
-
-  const handleAvatarChange = () => {
-    launchImageLibrary({ mediaType: 'photo', quality: 0.5 }, async response => {
-      if (response.didCancel) return;
-      const file = response.assets?.[0];
-      if (!file?.uri) return;
-
-      setAvatarSource({ uri: file.uri });
-      setIsUploading(true);
-      try {
-        await updateAvatar({
-          uri: file.uri,
-          type: file.type,
-          name: file.fileName || `pt_avatar_${Date.now()}.jpg`,
-        });
-        Alert.alert('Thành công', 'Cập nhật ảnh đại diện thành công!');
-        await refreshUser();
-      } catch (err) {
-        Alert.alert('Lỗi', err.message);
-      } finally {
-        setIsUploading(false);
-      }
+  const handleChooseAvatar = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.7,
     });
-  };
-
-  const handleUpdateProfile = async () => {
-    setIsUpdating(true);
+    if (result.didCancel) return;
+    const image = result.assets?.[0];
+    if (!image) return;
+    setLoading(true);
     try {
-      const updates = {
-        name: profileData.name,
-        email: profileData.email,
-        experience: Number(profileData.experience) || 0,
-        specialty: profileData.specialty,
-        bio: profileData.bio,
-      };
-      const response = await updatePTProfile(updates);
-      Alert.alert(
-        'Thành công',
-        response.message || 'Cập nhật thông tin thành công!',
-      );
+      await updateAvatar(image);
       await refreshUser();
-      navigation.navigate('PTProfileScreen');
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || err.message;
-      Alert.alert('Lỗi', errorMsg);
+      Alert.alert('✅ Thành công', 'Ảnh đại diện đã được cập nhật!');
+    } catch {
+      Alert.alert('❌ Lỗi', 'Không thể cập nhật ảnh đại diện.');
     } finally {
-      setIsUpdating(false);
+      setLoading(false);
     }
   };
 
-  if (isFetching) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#30C451" />
-      </View>
-    );
-  }
+  const handleUpdate = async () => {
+    if (!name.trim()) {
+      Alert.alert('⚠️ Thiếu thông tin', 'Vui lòng nhập họ và tên!');
+      return;
+    }
+    setLoading(true);
+    try {
+      await updatePTProfile({
+        name,
+        email,
+        experience: parseInt(experience) || 0,
+        specialty,
+        bio,
+      });
+      await refreshUser();
+      Alert.alert('✅ Thành công', 'Hồ sơ huấn luyện viên đã được cập nhật.');
+      navigation.goBack();
+    } catch {
+      Alert.alert('❌ Lỗi', 'Không thể cập nhật hồ sơ.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const avatarSource = user?.avatar
+    ? { uri: `${user.avatar}?timestamp=${Date.now()}` }
+    : require('@assets/images/avt.png');
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={androidBehavior}
-      keyboardVerticalOffset={0}
-    >
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.navigate('PTProfileScreen')}
-          >
-            <Icon name="arrow-back" size={26} color="#000" />
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={26} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cập nhật hồ sơ PT</Text>
-          <View style={{ width: 26 }} />
+          <Text style={styles.headerTitle}>My Profile</Text>
         </View>
 
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
+        {/* Banner */}
+        <View style={styles.banner}>
           <View style={styles.avatarContainer}>
-            <Image source={avatarSource} style={styles.avatarImage} />
+            <Image source={avatarSource} style={styles.avatar} />
             <TouchableOpacity
-              style={styles.editAvatar}
-              onPress={handleAvatarChange}
+              style={styles.cameraButton}
+              onPress={handleChooseAvatar}
             >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Icon name="edit" size={18} color="#fff" />
-              )}
+              <Icon name="photo-camera" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.avatarName}>
-            {profileData.name || 'Huấn luyện viên'}
+          <Text style={styles.name}>{name || 'Huấn luyện viên'}</Text>
+          <Text style={styles.email}>{email}</Text>
+          <Text style={styles.subText}>
+            Kinh nghiệm: {experience || '0'} năm
           </Text>
-          <Text style={styles.avatarEmail}>{profileData.email}</Text>
-          <Text style={styles.avatarPhone}>📞 {profileData.phone}</Text>
+
+          <View style={styles.infoBox}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoValue}>{experience || '0'}</Text>
+              <Text style={styles.infoLabel}>Năm KN</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoItem}>
+              <Text style={styles.infoValue}>
+                {specialty?.length ? specialty.split(',')[0] : '---'}
+              </Text>
+              <Text style={styles.infoLabel}>Chuyên môn</Text>
+            </View>
+          </View>
         </View>
 
         {/* Form */}
-        <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <Icon
-              name="person"
-              size={22}
-              color="#30C451"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Họ tên"
-              value={profileData.name}
-              onChangeText={t => handleInputChange('name', t)}
-            />
-          </View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Họ và tên</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Nhập họ và tên"
+            value={name}
+            onChangeText={setName}
+          />
 
-          <View style={styles.inputGroup}>
-            <Icon
-              name="email"
-              size={22}
-              color="#30C451"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={profileData.email}
-              onChangeText={t => handleInputChange('email', t)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Nhập email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+          />
 
-          <View style={[styles.inputGroup, { opacity: 0.7 }]}>
-            <Icon
-              name="phone"
-              size={22}
-              color="#30C451"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Số điện thoại"
-              value={profileData.phone}
-              editable={false}
-            />
-          </View>
+          <Text style={styles.label}>Số điện thoại</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: '#F5F5F5' }]}
+            value={phone}
+            editable={false}
+          />
 
-          <View style={styles.inputGroup}>
-            <Icon
-              name="fitness-center"
-              size={22}
-              color="#30C451"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Kinh nghiệm (năm)"
-              value={profileData.experience}
-              onChangeText={t => handleInputChange('experience', t)}
-              keyboardType="numeric"
-            />
-          </View>
+          <Text style={styles.label}>Kinh nghiệm (năm)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Nhập số năm kinh nghiệm"
+            value={experience}
+            onChangeText={setExperience}
+            keyboardType="numeric"
+          />
 
-          <View style={styles.inputGroup}>
-            <Icon
-              name="school"
-              size={22}
-              color="#30C451"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Chuyên môn"
-              value={profileData.specialty}
-              onChangeText={t => handleInputChange('specialty', t)}
-            />
-          </View>
+          <Text style={styles.label}>Chuyên môn</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="VD: Giảm cân, tăng cơ..."
+            value={specialty}
+            onChangeText={setSpecialty}
+          />
 
-          <View style={[styles.inputGroup, { alignItems: 'flex-start' }]}>
-            <Icon
-              name="info"
-              size={22}
-              color="#30C451"
-              style={[styles.inputIcon, { marginTop: 10 }]}
-            />
-            <TextInput
-              style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
-              placeholder="Giới thiệu ngắn về bản thân..."
-              value={profileData.bio}
-              onChangeText={t => handleInputChange('bio', t)}
-              multiline
-            />
-          </View>
+          <Text style={styles.label}>Giới thiệu bản thân</Text>
+          <TextInput
+            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+            placeholder="Hãy viết vài dòng về bản thân..."
+            value={bio}
+            onChangeText={setBio}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && { opacity: 0.7 }]}
+            onPress={handleUpdate}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Cập nhật hồ sơ</Text>
+            )}
+          </TouchableOpacity>
         </View>
-
-        {/* Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, isUpdating && styles.buttonDisabled]}
-          onPress={handleUpdateProfile}
-          disabled={isUpdating}
-        >
-          {isUpdating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>💾 Lưu thông tin</Text>
-          )}
-        </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default UpdatePTProfileScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  scrollContainer: {
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 45,
+    paddingHorizontal: 20,
+    marginTop: 10,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#212020',
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 10,
   },
-  avatarSection: {
+  banner: {
+    backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
-    marginVertical: 25,
+    paddingVertical: 25,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    marginBottom: 10,
   },
   avatarContainer: {
     position: 'relative',
+    marginBottom: 10,
   },
-  avatarImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: '#E8F5E9',
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: PRIMARY_COLOR,
+    backgroundColor: '#fff',
   },
-  editAvatar: {
+  cameraButton: {
     position: 'absolute',
     bottom: 0,
-    right: 5,
-    backgroundColor: '#30C451',
-    borderRadius: 15,
-    padding: 6,
+    right: 0,
+    backgroundColor: PRIMARY_COLOR,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  avatarName: {
+  name: {
     fontSize: 20,
+    fontWeight: '600',
+    color: '#222',
+    marginTop: 5,
+  },
+  email: {
+    fontSize: 14,
+    color: '#555',
+  },
+  subText: {
+    fontSize: 14,
+    color: '#777',
+    marginBottom: 10,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: PRIMARY_COLOR,
+    borderRadius: 12,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+  },
+  infoItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#fff',
+    marginHorizontal: 10,
+  },
+  infoValue: {
+    color: '#fff',
     fontWeight: '700',
-    marginTop: 10,
-    color: '#000',
+    fontSize: 16,
   },
-  avatarEmail: {
-    color: '#666',
-    marginTop: 2,
+  infoLabel: {
+    color: '#fff',
+    fontSize: 13,
   },
-  avatarPhone: {
-    marginTop: 4,
+  form: {
+    paddingHorizontal: 20,
+    marginTop: 15,
+  },
+  label: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 5,
     fontWeight: '500',
   },
-  formContainer: {
-    marginBottom: 30,
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
   input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
+    borderWidth: 1,
+    borderColor: PRIMARY_COLOR,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    fontSize: 15,
+    color: '#222',
   },
   saveButton: {
-    backgroundColor: '#30C451',
-    borderRadius: 12,
-    paddingVertical: 15,
+    backgroundColor: PRIMARY_COLOR,
+    borderRadius: 30,
+    marginTop: 25,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 40,
   },
   saveButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
