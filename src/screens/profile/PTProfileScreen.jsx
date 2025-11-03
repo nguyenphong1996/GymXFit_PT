@@ -30,7 +30,7 @@ const PTProfileScreen = () => {
     avatar: null,
   };
 
-  // Lấy 1 chuyên môn (nếu có) — ưu tiên phần tử đầu, nếu không có thì hiển thị 'Chưa có'
+  // Lấy 1 chuyên môn (nếu có) — ưu tiên phần tử đầu
   const specialty =
     ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
 
@@ -85,12 +85,6 @@ const PTProfileScreen = () => {
           iconLib="Ion"
           icon="document-text-outline"
           text="Hợp đồng huấn luyện"
-          onPress={() => {}}
-        />
-        <OptionItem
-          iconLib="Ion"
-          icon="key-outline"
-          text="Đổi mật khẩu"
           onPress={() => {}}
         />
       </View>
