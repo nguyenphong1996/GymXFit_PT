@@ -1,5 +1,5 @@
-// 📁 src/screens/PT/PTProfileScreen.js
-import React from 'react';
+// src/screens/PT/PTProfileScreen.js
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,118 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import IconIon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { getPTDetail, loadTokenFromStorage, setAuthToken } from '@api/ptApi';
 
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
 
+/**
+ * LƯU Ý:
+ * - staffId: bạn cần truyền staffId từ context/asyncStorage/auth state hoặc params
+ * - Ở đây mình demo staffId lấy từ AsyncStorage key 'staffId' (bạn có thể thay đổi).
+ */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const PTProfileScreen = () => {
   const navigation = useNavigation();
+  const [ptData, setPtData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 🔹 Dữ liệu mẫu (hiển thị tĩnh)
-  const ptData = {
-    name: 'Huấn luyện viên Nguyễn Văn Nam',
-    email: 'namfit@example.com',
-    phone: '0909 123 456',
-    skills: ['Workout', 'Cardio', 'Stretching', 'Nutrition', 'Yoga'],
-    avatar: null,
+  // hàm lấy staffId từ AsyncStorage (bạn có thể dùng context)
+  const getStaffIdFromStorage = async () => {
+    try {
+      const id = await AsyncStorage.getItem('staffId');
+      return id || null;
+    } catch (err) {
+      console.warn('getStaffIdFromStorage', err);
+      return null;
+    }
   };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // load token nếu bạn lưu trong storage (tuỳ project)
+      await loadTokenFromStorage();
+      const staffId = await getStaffIdFromStorage();
+      if (!staffId) {
+        Alert.alert('Lỗi', 'Không tìm thấy staffId. Vui lòng đăng nhập lại.');
+        setPtData(null);
+        return;
+      }
+      const res = await getPTDetail(staffId);
+      /**
+       * res structure tuỳ backend. Mình giả định backend trả về object { id, name, email, phone, avatar, skills }
+       */
+      setPtData(res);
+    } catch (err) {
+      console.error('fetchData error', err);
+      Alert.alert('Lỗi', 'Không thể tải thông tin. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, []),
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+      </View>
+    );
+  }
+
+  if (!ptData) {
+    return (
+      <View style={styles.loadingWrap}>
+        <Text>Không có dữ liệu huấn luyện viên.</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={fetchData}>
+          <Text style={styles.retryText}>Tải lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const specialty =
     ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={PRIMARY_COLOR}
+        />
+      }
+    >
       <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
 
-      {/* 🟩 Banner */}
+      {/* Banner */}
       <View style={styles.banner}>
         <View style={styles.avatarContainer}>
           {ptData.avatar ? (
@@ -48,10 +131,9 @@ const PTProfileScreen = () => {
           )}
         </View>
 
-        <Text style={styles.name}>{ptData.name}</Text>
-        <Text style={styles.email}>{ptData.email}</Text>
+        <Text style={styles.name}>{ptData.name || '---'}</Text>
+        <Text style={styles.email}>{ptData.email || '---'}</Text>
 
-        {/* 🟢 Info Box (Chuyên môn) */}
         <View style={styles.infoBox}>
           <View style={styles.statBoxFull}>
             <Text style={styles.statValue}>{specialty}</Text>
@@ -60,13 +142,15 @@ const PTProfileScreen = () => {
         </View>
       </View>
 
-      {/* ⚙️ Danh mục chức năng */}
+      {/* options */}
       <View style={styles.optionContainer}>
         <OptionItem
           iconLib="MI"
           icon="edit"
           text="Chỉnh sửa hồ sơ"
-          onPress={() => navigation.navigate('UpdatePTProfileScreen')}
+          onPress={() =>
+            navigation.navigate('UpdatePTProfileScreen', { ptData })
+          }
         />
         <OptionItem
           iconLib="Ion"
@@ -88,8 +172,16 @@ const PTProfileScreen = () => {
         />
       </View>
 
-      {/* 🔴 Nút đăng xuất */}
-      <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={async () => {
+          // ví dụ logout: clear token + go to login
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('staffId');
+          setAuthToken(null);
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }}
+      >
         <IconMI
           name="logout"
           size={22}
@@ -102,11 +194,9 @@ const PTProfileScreen = () => {
   );
 };
 
-/* === COMPONENT: OptionItem === */
 const OptionItem = ({ iconLib, icon, text, onPress }) => {
   const IconSet =
     iconLib === 'MC' ? IconMC : iconLib === 'MI' ? IconMI : IconIon;
-
   return (
     <TouchableOpacity style={styles.optionItem} onPress={onPress}>
       <IconSet name={icon} size={26} color={PRIMARY_COLOR} />
@@ -118,9 +208,17 @@ const OptionItem = ({ iconLib, icon, text, onPress }) => {
 
 export default PTProfileScreen;
 
-/* === STYLES === */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  retryBtn: {
+    marginTop: 12,
+    backgroundColor: PRIMARY_COLOR,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: { color: '#fff', fontWeight: '600' },
 
   banner: {
     backgroundColor: LIGHT_GREEN,
@@ -152,7 +250,6 @@ const styles = StyleSheet.create({
   },
   email: { fontSize: 14, color: '#555', marginBottom: 10 },
 
-  /* ✅ Đồng bộ CSS vùng xanh với UpdatePTProfileScreen */
   infoBox: {
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 12,
