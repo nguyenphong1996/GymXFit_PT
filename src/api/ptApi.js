@@ -1,96 +1,109 @@
-// src/api/ptApi.js
+// 📁 src/api/ptApi.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/**
- * Chỉnh lại API_BASE thành host backend của bạn
- * Ví dụ: https://api.yourdomain.com hoặc http://10.0.2.2:3000
- */
-const API_BASE = 'https://yourdomain.com';
+// 🔹 Thay URL này bằng API thật của bạn:
+const BASE_URL = 'https://gymxfit-api.azurewebsites.net/api/admin';
 
 const api = axios.create({
-  baseURL: API_BASE,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: BASE_URL,
+  timeout: 20000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// helper: set token (gọi khi user login hoặc từ AsyncStorage)
-export const setAuthToken = token => {
-  if (token) {
-    api.defaults.headers.common.Authorization = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common.Authorization;
+// 🔹 Thêm token tự động nếu có
+api.interceptors.request.use(
+  async config => {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  error => Promise.reject(error),
+);
+
+// 🔹 Xử lý lỗi chung
+const handleError = err => {
+  console.error('PT API Error:', err);
+  if (err.response?.data) {
+    throw new Error(
+      err.response.data.message || JSON.stringify(err.response.data),
+    );
   }
+  throw err;
 };
 
-// optional: load token từ AsyncStorage (nếu bạn lưu token ở đó)
-export const loadTokenFromStorage = async (storageKey = 'authToken') => {
-  try {
-    const token = await AsyncStorage.getItem(storageKey);
-    if (token) setAuthToken(token);
-    return token;
-  } catch (err) {
-    console.warn('loadTokenFromStorage error', err);
-    return null;
-  }
-};
+// === 🟩 API functions ===
 
-/* ===== API methods ===== */
-
-// GET chi tiết PT
+// 🔸 Lấy chi tiết PT
 export const getPTDetail = async staffId => {
-  if (!staffId) throw new Error('staffId is required');
-  const { data } = await api.get(`/api/admin/staff/${staffId}`);
-  return data;
+  try {
+    const res = await api.get(`/staff/${staffId}`);
+    return res.data?.data ?? res.data;
+  } catch (err) {
+    handleError(err);
+  }
 };
 
-// PUT upload avatar (multipart/form-data)
-export const uploadPTAvatar = async (staffId, image) => {
-  // image: { uri, name?, type? } -> chúng ta chuẩn hoá
-  if (!staffId) throw new Error('staffId is required');
-  if (!image || !image.uri) throw new Error('image.uri is required');
+// 🔸 Cập nhật hồ sơ PT
+export const updatePTProfile = async (staffId, body) => {
+  try {
+    const res = await api.patch(`/staff/${staffId}`, body);
+    return res.data?.data ?? res.data;
+  } catch (err) {
+    handleError(err);
+  }
+};
 
-  const formData = new FormData();
-  const fileName = image.fileName || image.name || 'avatar.jpg';
-  const mimeType = image.type || 'image/jpeg';
+// 🔸 Upload avatar
+export const uploadPTAvatar = async (staffId, fileUri, mime = 'image/jpeg') => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: fileUri,
+      type: mime,
+      name: `avatar_${Date.now()}.jpg`,
+    });
 
-  formData.append('avatar', {
-    uri: image.uri,
-    name: fileName,
-    type: mimeType,
-  });
-
-  const { data } = await api.put(
-    `/api/admin/staff/${staffId}/avatar`,
-    formData,
-    {
+    const res = await api.put(`/staff/${staffId}/avatar`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-    },
-  );
-  return data;
+    });
+    return res.data?.data ?? res.data;
+  } catch (err) {
+    handleError(err);
+  }
 };
 
-// PATCH approve/update skills (tùy API backend, ở đây gửi skills list)
-export const updatePTSkills = async (staffId, skills = []) => {
-  if (!staffId) throw new Error('staffId is required');
-  const { data } = await api.patch(
-    `/api/admin/staff/${staffId}/skills/approve`,
-    {
-      skills,
-    },
-  );
-  return data;
+// 🔸 Lấy danh sách kỹ năng
+export const getAllSkills = async () => {
+  try {
+    const res = await api.get(`/skills`);
+    return res.data?.data ?? res.data;
+  } catch (err) {
+    console.warn('⚠️ Không thể lấy skills từ server, dùng danh sách mặc định');
+    return [
+      { id: 1, name: 'Workout' },
+      { id: 2, name: 'Cardio' },
+      { id: 3, name: 'Stretching' },
+      { id: 4, name: 'Nutrition' },
+      { id: 5, name: 'Yoga' },
+    ];
+  }
 };
 
-// PATCH cập nhật thông tin chung (nếu backend hỗ trợ)
-// Nếu backend có endpoint khác (ví dụ PATCH /api/admin/staff/{id}), bạn thay đổi ở đây
-export const updatePTProfile = async (staffId, payload = {}) => {
-  if (!staffId) throw new Error('staffId is required');
-  // ví dụ payload = { name, email }
-  const { data } = await api.patch(`/api/admin/staff/${staffId}`, payload);
-  return data;
+// 🔸 Admin phê duyệt kỹ năng (nếu có quyền)
+export const approvePTSkills = async (staffId, skills) => {
+  try {
+    const res = await api.patch(`/staff/${staffId}/skills/approve`, { skills });
+    return res.data?.data ?? res.data;
+  } catch (err) {
+    handleError(err);
+  }
 };
 
-export default api;
+export default {
+  getPTDetail,
+  updatePTProfile,
+  uploadPTAvatar,
+  getAllSkills,
+  approvePTSkills,
+};

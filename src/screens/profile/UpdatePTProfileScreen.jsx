@@ -1,4 +1,4 @@
-// src/screens/PT/UpdatePTProfileScreen.jsx
+// 📁 src/screens/PT/UpdatePTProfileScreen.jsx
 import React, { useState } from 'react';
 import {
   View,
@@ -15,11 +15,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { uploadPTAvatar, updatePTSkills, updatePTProfile } from '@api/ptApi';
 
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
-
 const SKILL_OPTIONS = [
   'Workout',
   'Cardio',
@@ -29,39 +27,24 @@ const SKILL_OPTIONS = [
   'Other',
 ];
 
-const UpdatePTProfileScreen = ({ navigation, route }) => {
-  const { ptData } = route.params || {};
-  const staffId = ptData?.id || null; // phải có
-
-  const [name, setName] = useState(ptData?.name || '');
-  const [email, setEmail] = useState(ptData?.email || '');
-  const [phone] = useState(ptData?.phone || '');
-  const [selectedSkills, setSelectedSkills] = useState(ptData?.skills || []);
-  const [avatar, setAvatar] = useState(ptData?.avatar || null);
-  const [localImageObj, setLocalImageObj] = useState(null); // save picked image object to upload
+const UpdatePTProfileScreen = ({ navigation }) => {
+  const [name, setName] = useState('Huấn luyện viên Nguyễn Văn Nam');
+  const [email, setEmail] = useState('namfit@example.com');
+  const [phone] = useState('0909 123 456');
+  const [selectedSkills, setSelectedSkills] = useState(['Workout', 'Cardio']);
+  const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleChooseAvatar = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        quality: 0.7,
-        includeBase64: false,
-      });
-
-      if (result.didCancel) {
-        return;
-      }
-      const image = result.assets?.[0];
-      if (!image) return;
-
-      // image: { uri, fileName, type, ... }
-      setAvatar(image.uri);
-      setLocalImageObj(image);
-    } catch (err) {
-      console.error('chooseAvatar error', err);
-      Alert.alert('Lỗi', 'Không chọn được ảnh.');
-    }
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.7,
+    });
+    if (result.didCancel) return;
+    const image = result.assets?.[0];
+    if (!image) return;
+    setAvatar(image.uri);
+    Alert.alert('✅ Thành công', 'Ảnh đại diện đã được chọn.');
   };
 
   const handleToggleSkill = skill => {
@@ -70,33 +53,9 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
     );
   };
 
-  const handleUpdate = async () => {
-    if (!staffId) {
-      Alert.alert('Lỗi', 'Không xác định huấn luyện viên (staffId).');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 1) upload avatar nếu thay đổi
-      if (localImageObj) {
-        await uploadPTAvatar(staffId, localImageObj);
-      }
-
-      // 2) update profile thông tin chung (name/email)
-      await updatePTProfile(staffId, { name, email });
-
-      // 3) update skills (approve)
-      await updatePTSkills(staffId, selectedSkills);
-
-      Alert.alert('✅ Thành công', 'Hồ sơ PT đã được cập nhật.');
-      navigation.goBack();
-    } catch (err) {
-      console.error('handleUpdate error', err);
-      Alert.alert('Lỗi', 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+  const handleUpdate = () => {
+    Alert.alert('✅ Thành công', 'Hồ sơ PT đã được cập nhật (demo).');
+    navigation.goBack();
   };
 
   const avatarSource = avatar
@@ -107,6 +66,8 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
+
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={26} color="#333" />
@@ -114,6 +75,7 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
           <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
         </View>
 
+        {/* 🟩 Banner */}
         <View style={styles.banner}>
           <View style={styles.avatarContainer}>
             <Image source={avatarSource} style={styles.avatar} />
@@ -124,10 +86,8 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
               <Icon name="photo-camera" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
-
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.email}>{email}</Text>
-
           <View style={styles.infoBox}>
             <Text style={styles.infoValue}>
               {selectedSkills[0] || 'Chưa có'}
@@ -136,6 +96,7 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
           </View>
         </View>
 
+        {/* 🧾 Form chỉnh sửa */}
         <View style={styles.form}>
           <Text style={styles.label}>Họ và tên</Text>
           <TextInput
@@ -152,7 +113,6 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
-            autoCapitalize="none"
           />
 
           <Text style={styles.label}>Số điện thoại</Text>
@@ -205,9 +165,9 @@ const UpdatePTProfileScreen = ({ navigation, route }) => {
 
 export default UpdatePTProfileScreen;
 
+/* === STYLES === */
 const styles = StyleSheet.create({
   scrollContainer: { paddingBottom: 40 },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -220,7 +180,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 10,
   },
-
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
@@ -251,7 +210,6 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 20, fontWeight: '700', color: '#222', marginTop: 5 },
   email: { fontSize: 14, color: '#555', marginBottom: 10 },
-
   infoBox: {
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 12,
@@ -272,7 +230,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
     textAlign: 'center',
   },
-
   form: { paddingHorizontal: 20, marginTop: 10 },
   label: {
     fontSize: 14,
@@ -290,10 +247,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#222',
   },
-
   checkboxContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 10,
     marginTop: 5,
   },
   checkboxItem: {
@@ -313,7 +270,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   checkboxLabel: { fontSize: 14, color: '#333' },
-
   saveButton: {
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 30,
