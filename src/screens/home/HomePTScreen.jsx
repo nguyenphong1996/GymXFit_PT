@@ -1,3 +1,4 @@
+// 📁 src/screens/PT/HomePTScreen.js
 import React from 'react';
 import {
   View,
@@ -13,6 +14,7 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 const HomePTScreen = ({ navigation }) => {
   React.useEffect(() => {
+    // Ẩn thanh trạng thái & điều hướng để giao diện toàn màn hình
     StatusBar.setHidden(true);
     if (Platform.OS === 'android') SystemNavigationBar.stickyImmersive();
 
@@ -21,9 +23,15 @@ const HomePTScreen = ({ navigation }) => {
     };
   }, []);
 
+  // Danh sách các nút chức năng
   const buttons = [
     { title: 'Hồ sơ PT', icon: 'person', screen: 'PTProfileScreen' },
     { title: 'Lịch PT', icon: 'calendar-today', screen: 'PTScheduleScreen' },
+    {
+      title: 'Lịch trống PT',
+      icon: 'event-available',
+      screen: 'PTFreeScheduleScreen',
+    }, // 🟩 Nút mới
     { title: 'Khách hàng', icon: 'groups', screen: 'PTCustomerListScreen' },
   ];
 
@@ -39,12 +47,13 @@ const HomePTScreen = ({ navigation }) => {
         <Text style={styles.title}>GymXFit PT</Text>
       </View>
 
+      {/* Lời chào */}
       <Text style={styles.subtitle}>Chào mừng bạn trở lại!</Text>
       <Text style={styles.subnote}>
         Chọn chức năng để bắt đầu công việc hôm nay
       </Text>
 
-      {/* Các nút chức năng */}
+      {/* Danh sách nút */}
       <View style={styles.buttonContainer}>
         {buttons.map((btn, index) => (
           <TouchableOpacity
