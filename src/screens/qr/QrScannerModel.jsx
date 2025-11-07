@@ -1,3 +1,4 @@
+// QrScannerModal.js
 import React, {
   Suspense,
   useCallback,
@@ -21,6 +22,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import CameraKitModule, { Camera, CameraType } from 'react-native-camera-kit';
+import { useNavigation } from '@react-navigation/native';
 
 const PALETTE = {
   primary: '#30C451',
@@ -49,7 +51,8 @@ const PERMISSION_STATUS = {
   blocked: 'blocked',
 };
 
-const DEFAULT_HELPER_TEXT = 'Giữ thiết bị ổn định, đưa QR vào khung để điểm danh.';
+const DEFAULT_HELPER_TEXT =
+  'Giữ thiết bị ổn định, đưa QR vào khung để điểm danh.';
 
 const formatDateTime = value => {
   if (!value) return '';
@@ -82,12 +85,20 @@ const QrScannerModal = ({
   disableActions = false,
   onUnsupportedRole,
 }) => {
-  const [permissionStatus, setPermissionStatus] = useState(PERMISSION_STATUS.checking);
+  const navigation = useNavigation();
+
+  const [permissionStatus, setPermissionStatus] = useState(
+    PERMISSION_STATUS.checking,
+  );
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [scannedResult, setScannedResult] = useState(null);
   const [cameraError, setCameraError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
-  const [actionState, setActionState] = useState({ status: 'idle', message: '', type: null });
+  const [actionState, setActionState] = useState({
+    status: 'idle',
+    message: '',
+    type: null,
+  });
 
   const resetState = useCallback(() => {
     setTorchEnabled(false);
@@ -101,9 +112,13 @@ const QrScannerModal = ({
   const requestPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       try {
-        const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
-        if (result === PermissionsAndroid.RESULTS.GRANTED) return PERMISSION_STATUS.granted;
-        if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) return PERMISSION_STATUS.blocked;
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
+        if (result === PermissionsAndroid.RESULTS.GRANTED)
+          return PERMISSION_STATUS.granted;
+        if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN)
+          return PERMISSION_STATUS.blocked;
         return PERMISSION_STATUS.denied;
       } catch {
         return PERMISSION_STATUS.denied;
@@ -111,7 +126,8 @@ const QrScannerModal = ({
     }
 
     try {
-      const granted = await CameraKitModule?.requestDeviceCameraAuthorization?.();
+      const granted =
+        await CameraKitModule?.requestDeviceCameraAuthorization?.();
       return granted ? PERMISSION_STATUS.granted : PERMISSION_STATUS.blocked;
     } catch {
       return PERMISSION_STATUS.blocked;
@@ -121,7 +137,9 @@ const QrScannerModal = ({
   const ensurePermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       try {
-        const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
         if (hasPermission) return PERMISSION_STATUS.granted;
       } catch {
         // fallthrough to request
@@ -130,7 +148,8 @@ const QrScannerModal = ({
     }
 
     try {
-      const granted = await CameraKitModule?.checkDeviceCameraAuthorizationStatus?.();
+      const granted =
+        await CameraKitModule?.checkDeviceCameraAuthorizationStatus?.();
       if (granted) return PERMISSION_STATUS.granted;
       return await requestPermission();
     } catch {
@@ -156,7 +175,13 @@ const QrScannerModal = ({
   const handleClose = useCallback(() => {
     resetState();
     onClose?.();
-  }, [onClose, resetState]);
+    // navigate back to HomePTScreen (require this route to exist in your navigation)
+    try {
+      navigation.navigate('HomePTScreen');
+    } catch {
+      // fallback: do nothing if navigation fails
+    }
+  }, [onClose, resetState, navigation]);
 
   const handleRetryPermission = useCallback(() => {
     setPermissionStatus(PERMISSION_STATUS.checking);
@@ -192,7 +217,8 @@ const QrScannerModal = ({
   }, []);
 
   const handleCameraError = useCallback(event => {
-    const message = event?.nativeEvent?.errorMessage || 'Không thể khởi tạo camera';
+    const message =
+      event?.nativeEvent?.errorMessage || 'Không thể khởi tạo camera';
     setCameraError(message);
   }, []);
 
@@ -208,7 +234,8 @@ const QrScannerModal = ({
 
   const handleUnsupported = useCallback(
     message => {
-      const fallback = message || 'Tài khoản hiện tại không thể sử dụng chức năng này.';
+      const fallback =
+        message || 'Tài khoản hiện tại không thể sử dụng chức năng này.';
       setActionState({
         status: 'error',
         message: fallback,
@@ -226,7 +253,9 @@ const QrScannerModal = ({
       if (!scannedResult) return;
 
       if (disableActions) {
-        handleUnsupported('Vui lòng đăng nhập bằng tài khoản phù hợp để điểm danh.');
+        handleUnsupported(
+          'Vui lòng đăng nhập bằng tài khoản phù hợp để điểm danh.',
+        );
         return;
       }
 
@@ -245,7 +274,11 @@ const QrScannerModal = ({
         const feedback = await handler(scannedResult);
         setActionState({
           status: 'success',
-          message: feedback || (actionType === 'checkin' ? 'Check-in thành công.' : 'Check-out thành công.'),
+          message:
+            feedback ||
+            (actionType === 'checkin'
+              ? 'Check-in thành công.'
+              : 'Check-out thành công.'),
           type: actionType,
         });
       } catch (error) {
@@ -266,7 +299,9 @@ const QrScannerModal = ({
       return (
         <View style={styles.stateContainer}>
           <ActivityIndicator size="large" color={PALETTE.primary} />
-          <Text style={styles.stateText}>Đang kiểm tra quyền truy cập camera...</Text>
+          <Text style={styles.stateText}>
+            Đang kiểm tra quyền truy cập camera...
+          </Text>
         </View>
       );
     }
@@ -279,14 +314,22 @@ const QrScannerModal = ({
       return (
         <View style={styles.permissionContainer}>
           <Icon name="camera-off" size={56} color={PALETTE.primary} />
-          <Text style={styles.permissionTitle}>Chưa có quyền sử dụng camera</Text>
+          <Text style={styles.permissionTitle}>
+            Chưa có quyền sử dụng camera
+          </Text>
           <Text style={styles.permissionDescription}>
             Vui lòng cho phép GymXFit truy cập camera để quét mã QR của bạn.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={handleRetryPermission}>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={handleRetryPermission}
+          >
             <Text style={styles.permissionButtonText}>Thử lại</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.permissionGhostButton} onPress={handleClose}>
+          <TouchableOpacity
+            style={styles.permissionGhostButton}
+            onPress={handleClose}
+          >
             <Text style={styles.permissionGhostButtonText}>Đóng</Text>
           </TouchableOpacity>
         </View>
@@ -296,19 +339,33 @@ const QrScannerModal = ({
     return (
       <View style={styles.permissionContainer}>
         <Icon name="shield-lock" size={56} color={PALETTE.primary} />
-        <Text style={styles.permissionTitle}>Camera đã bị chặn quyền truy cập</Text>
-        <Text style={styles.permissionDescription}>
-          Hãy mở phần Cài đặt và cấp quyền camera cho GymXFit để tiếp tục quét mã QR.
+        <Text style={styles.permissionTitle}>
+          Camera đã bị chặn quyền truy cập
         </Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={handleOpenSettings}>
+        <Text style={styles.permissionDescription}>
+          Hãy mở phần Cài đặt và cấp quyền camera cho GymXFit để tiếp tục quét
+          mã QR.
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={handleOpenSettings}
+        >
           <Text style={styles.permissionButtonText}>Mở cài đặt</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.permissionGhostButton} onPress={handleClose}>
+        <TouchableOpacity
+          style={styles.permissionGhostButton}
+          onPress={handleClose}
+        >
           <Text style={styles.permissionGhostButtonText}>Đóng</Text>
         </TouchableOpacity>
       </View>
     );
-  }, [handleClose, handleOpenSettings, handleRetryPermission, permissionStatus]);
+  }, [
+    handleClose,
+    handleOpenSettings,
+    handleRetryPermission,
+    permissionStatus,
+  ]);
 
   const renderResultCard = scannedResult ? (
     <View style={styles.resultCard}>
@@ -316,14 +373,20 @@ const QrScannerModal = ({
         <Icon name="check-circle" size={24} color={PALETTE.primary} />
         <Text style={styles.resultTitle}>Đã quét mã QR</Text>
       </View>
-      {helperTitle ? <Text style={styles.resultHelper}>{helperTitle}</Text> : null}
+      {helperTitle ? (
+        <Text style={styles.resultHelper}>{helperTitle}</Text>
+      ) : null}
 
       <View style={styles.payloadContainer}>
         <View style={styles.payloadRow}>
           <Icon name="fingerprint" size={18} color={PALETTE.primary} />
           <Text style={styles.payloadLabel}>Dữ liệu</Text>
         </View>
-        <Text style={styles.payloadValue} numberOfLines={4} ellipsizeMode="middle">
+        <Text
+          style={styles.payloadValue}
+          numberOfLines={4}
+          ellipsizeMode="middle"
+        >
           {scannedResult.value}
         </Text>
 
@@ -331,11 +394,17 @@ const QrScannerModal = ({
           <View style={styles.payloadMeta}>
             <View style={styles.metaRow}>
               <Icon name="barcode-scan" size={18} color={PALETTE.accent} />
-              <Text style={styles.metaText}>Lớp: {shortenValue(parsedPayload.classId)}</Text>
+              <Text style={styles.metaText}>
+                Lớp: {shortenValue(parsedPayload.classId)}
+              </Text>
             </View>
             {parsedPayload?.generatedAt ? (
               <View style={styles.metaRow}>
-                <Icon name="clock-time-four-outline" size={18} color={PALETTE.accent} />
+                <Icon
+                  name="clock-time-four-outline"
+                  size={18}
+                  color={PALETTE.accent}
+                />
                 <Text style={styles.metaText}>
                   Sinh lúc: {formatDateTime(parsedPayload.generatedAt)}
                 </Text>
@@ -344,7 +413,9 @@ const QrScannerModal = ({
             {parsedPayload?.token ? (
               <View style={styles.metaRow}>
                 <Icon name="shield-key" size={18} color={PALETTE.accent} />
-                <Text style={styles.metaText}>Token: {shortenValue(parsedPayload.token)}</Text>
+                <Text style={styles.metaText}>
+                  Token: {shortenValue(parsedPayload.token)}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -355,11 +426,17 @@ const QrScannerModal = ({
         <View
           style={[
             styles.feedbackBanner,
-            actionState.status === 'success' ? styles.feedbackSuccess : styles.feedbackError,
+            actionState.status === 'success'
+              ? styles.feedbackSuccess
+              : styles.feedbackError,
           ]}
         >
           <Icon
-            name={actionState.status === 'success' ? 'check-circle-outline' : 'alert-circle-outline'}
+            name={
+              actionState.status === 'success'
+                ? 'check-circle-outline'
+                : 'alert-circle-outline'
+            }
             size={18}
             color={PALETTE.textOnPrimary}
           />
@@ -411,7 +488,9 @@ const QrScannerModal = ({
   ) : (
     <View style={styles.helperCard}>
       <Icon name="qrcode-scan" size={22} color={PALETTE.accent} />
-      <Text style={styles.helperText}>{helperTitle || DEFAULT_HELPER_TEXT}</Text>
+      <Text style={styles.helperText}>
+        {helperTitle || DEFAULT_HELPER_TEXT}
+      </Text>
     </View>
   );
 
@@ -430,15 +509,25 @@ const QrScannerModal = ({
           <View style={styles.overlayDim} />
         </View>
         <View style={[styles.overlayDim, styles.overlayBottom]}>
-          <Text style={styles.bottomInstruction}>Đưa mã QR vào vùng khung để quét</Text>
+          <Text style={styles.bottomInstruction}>
+            Đưa mã QR vào vùng khung để quét
+          </Text>
         </View>
       </View>
       <View style={styles.actionsBar}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleClose}>
+        <TouchableOpacity
+          style={styles.actionButtonSmall}
+          onPress={handleClose}
+        >
           <Icon name="close" size={26} color={PALETTE.textPrimary} />
-          <Text style={[styles.actionLabel, styles.actionLabelSpacing]}>Đóng</Text>
+          <Text style={[styles.actionLabel, styles.actionLabelSpacing]}>
+            Đóng
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleTorchToggle}>
+        <TouchableOpacity
+          style={styles.actionButtonSmall}
+          onPress={handleTorchToggle}
+        >
           <Icon
             name={torchEnabled ? 'flashlight' : 'flashlight-off'}
             size={26}
@@ -496,7 +585,11 @@ const QrScannerModal = ({
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent
+        />
         <View style={styles.header}>
           <TouchableOpacity style={styles.headerButton} onPress={handleClose}>
             <Icon name="arrow-left" size={24} color={PALETTE.textPrimary} />
@@ -653,7 +746,7 @@ const styles = StyleSheet.create({
     borderTopColor: PALETTE.outline,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  actionButton: {
+  actionButtonSmall: {
     alignItems: 'center',
     marginHorizontal: 16,
   },
@@ -780,6 +873,8 @@ const styles = StyleSheet.create({
   },
   resultActions: {
     gap: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   actionButton: {
     borderRadius: 14,
@@ -788,6 +883,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
+    paddingHorizontal: 18,
   },
   actionButtonDisabled: {
     opacity: 0.6,

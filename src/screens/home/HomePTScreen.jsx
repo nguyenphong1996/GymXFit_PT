@@ -14,53 +14,65 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 const HomePTScreen = ({ navigation }) => {
   React.useEffect(() => {
-    // Ẩn thanh trạng thái & điều hướng để giao diện toàn màn hình
+    // Ẩn thanh trạng thái & thanh điều hướng để hiển thị toàn màn hình
     StatusBar.setHidden(true);
     if (Platform.OS === 'android') SystemNavigationBar.stickyImmersive();
 
+    // Khi thoát khỏi màn hình, hiện lại thanh điều hướng
     return () => {
       if (Platform.OS === 'android') SystemNavigationBar.navigationShow();
     };
   }, []);
 
-  // Danh sách các nút chức năng
+  // Danh sách các nút chức năng chính
   const buttons = [
     { title: 'Hồ sơ PT', icon: 'person', screen: 'PTProfileScreen' },
     { title: 'Lịch PT', icon: 'calendar-today', screen: 'PTScheduleScreen' },
     {
       title: 'Lịch trống PT',
       icon: 'event-available',
-      screen: 'PTFreeScheduleScreen',
-    }, // 🟩 Nút mới
+      screen: 'PTFreeScheduleScreen', // ✅ Khi nhấn sẽ chuyển đến màn hình này
+    },
     { title: 'Khách hàng', icon: 'groups', screen: 'PTCustomerListScreen' },
   ];
 
   return (
     <View style={styles.container}>
-      {/* Logo và tiêu đề */}
-      <View style={styles.header}>
-        <Image
-          source={require('@assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.title}>GymXFit PT</Text>
+      {/* 🟩 Header gồm logo và nút quét QR */}
+      <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('@assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>GymXFit PT</Text>
+        </View>
+
+        {/* 🟩 Nút QR ở góc phải */}
+        <TouchableOpacity
+          style={styles.qrButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('QrScannerModel')} // ✅ Chuyển đến QrScannerModel
+        >
+          <Icon name="qr-code-scanner" size={28} color="#20B24A" />
+        </TouchableOpacity>
       </View>
 
-      {/* Lời chào */}
+      {/* 🟩 Lời chào */}
       <Text style={styles.subtitle}>Chào mừng bạn trở lại!</Text>
       <Text style={styles.subnote}>
         Chọn chức năng để bắt đầu công việc hôm nay
       </Text>
 
-      {/* Danh sách nút */}
+      {/* 🟩 Danh sách các nút chức năng */}
       <View style={styles.buttonContainer}>
         {buttons.map((btn, index) => (
           <TouchableOpacity
             key={index}
             style={styles.menuButton}
-            onPress={() => navigation.navigate(btn.screen)}
             activeOpacity={0.85}
+            onPress={() => navigation.navigate(btn.screen)}
           >
             <View style={styles.iconWrapper}>
               <Icon name={btn.icon} size={26} color="#20B24A" />
@@ -84,27 +96,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  header: {
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logo: {
-    width: 150,
+    width: 60,
     height: 60,
-    marginBottom: 6,
+    marginRight: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: '#20B24A',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  qrButton: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 14,
+    padding: 10,
+    elevation: 3,
+    shadowColor: '#20B24A',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
-    marginTop: 4,
+    marginTop: 8,
   },
   subnote: {
     fontSize: 14,
