@@ -20,7 +20,7 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="HomePTScreen"
+    initialRouteName="UpdatePTProfileScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />

@@ -1,3 +1,4 @@
+// 📁 src/screens/PT/PTFreeScheduleScreen.js
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -9,32 +10,55 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useLayoutEffect } from 'react';
 
 const { width } = Dimensions.get('window');
 const paddingHorizontal = 16;
 const gap = 8;
 const boxSize = (width - paddingHorizontal * 2 - gap * 6) / 7;
 
-// ✅ 4 ca mặc định
-const SHIFTS = [
-  { id: 'morning', label: 'Ca sáng (6h - 10h)' },
-  { id: 'noon', label: 'Ca trưa (10h - 14h)' },
-  { id: 'afternoon', label: 'Ca chiều (14h - 18h)' },
-  { id: 'evening', label: 'Ca tối (18h - 22h)' },
-];
-
 const PTFreeScheduleScreen = ({ navigation }) => {
+  // ✅ Ẩn header mặc định của navigation
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  const [mode, setMode] = useState('week');
   const [displayedDate, setDisplayedDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedSlots, setSelectedSlots] = useState({});
 
-  // 🗓️ PT lưu lịch rảnh (key = YYYY-MM-DD)
-  const [availableSlots, setAvailableSlots] = useState({});
+  const slots = [
+    { label: 'Ca 1 (06:00 - 10:00)', key: 'Ca 1' },
+    { label: 'Ca 2 (10:00 - 12:00)', key: 'Ca 2' },
+    { label: 'Ca 3 (14:00 - 17:00)', key: 'Ca 3' },
+    { label: 'Ca 4 (17:00 - 21:00)', key: 'Ca 4' },
+  ];
 
-  const today = new Date();
-  const year = displayedDate.getFullYear();
-  const month = displayedDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const toggleSlot = (dateKey, slotKey) => {
+    setSelectedSlots(prev => {
+      const current = prev[dateKey] || [];
+      const updated = current.includes(slotKey)
+        ? current.filter(s => s !== slotKey)
+        : [...current, slotKey];
+      return { ...prev, [dateKey]: updated };
+    });
+  };
+
+  const handleSave = () => {
+    const key = formatDateKey(selectedDate);
+    const chosen = selectedSlots[key] || [];
+    if (chosen.length === 0) {
+      Alert.alert('Thông báo', 'Vui lòng chọn ít nhất 1 ca rảnh để lưu.');
+      return;
+    }
+    Alert.alert(
+      'Đã lưu lịch rảnh',
+      `Ngày ${key}\nCác ca rảnh: ${chosen.join(
+        ', ',
+      )}\nThông tin đã gửi đến Admin.`,
+    );
+  };
 
   const getMonthName = m =>
     [
@@ -52,13 +76,18 @@ const PTFreeScheduleScreen = ({ navigation }) => {
       'Tháng 12',
     ][m];
 
-  const formatDateKey = date =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-      2,
-      '0',
-    )}-${String(date.getDate()).padStart(2, '0')}`;
+  const getDayLabel = date => {
+    if (!date) return '';
+    const d = new Date(date);
+    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    return days[d.getDay()];
+  };
 
-  // 🗓️ Danh sách ngày trong tháng
+  const year = displayedDate.getFullYear();
+  const month = displayedDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+
   const monthDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
@@ -70,152 +99,207 @@ const PTFreeScheduleScreen = ({ navigation }) => {
     return days;
   }, [year, month]);
 
+  const weekDays = useMemo(() => {
+    const current = new Date(displayedDate);
+    const start = new Date(current);
+    start.setDate(current.getDate() - current.getDay());
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  }, [displayedDate]);
+
+  const handleSelectDay = day => {
+    if (day) setSelectedDate(day);
+  };
+
   const handlePrev = () => {
     const newDate = new Date(displayedDate);
-    newDate.setMonth(month - 1);
+    if (mode === 'month') newDate.setMonth(month - 1);
+    else newDate.setDate(displayedDate.getDate() - 7);
     setDisplayedDate(newDate);
   };
 
   const handleNext = () => {
     const newDate = new Date(displayedDate);
-    newDate.setMonth(month + 1);
+    if (mode === 'month') newDate.setMonth(month + 1);
+    else newDate.setDate(displayedDate.getDate() + 7);
     setDisplayedDate(newDate);
   };
 
-  const handleSelectDay = day => {
-    if (day) setSelectedDate(new Date(year, month, day));
+  const today = new Date();
+  const formatDateKey = date => {
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      '0',
+    )}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  const toggleShift = shiftId => {
-    const key = formatDateKey(selectedDate);
-    const current = availableSlots[key] || [];
-    let updated = [];
-
-    if (current.includes(shiftId)) {
-      updated = current.filter(s => s !== shiftId);
-    } else {
-      updated = [...current, shiftId];
-    }
-
-    setAvailableSlots(prev => ({ ...prev, [key]: updated }));
-  };
-
-  const handleSave = () => {
-    const key = formatDateKey(selectedDate);
-    const shifts = availableSlots[key] || [];
-    Alert.alert('Lưu thành công', `Đã lưu ${shifts.length} ca rảnh cho ${key}`);
-    // 🔸 Tại đây bạn có thể gọi API để lưu lên server
-    // e.g., saveAvailableShiftsAPI(ptId, key, shifts)
-  };
-
-  const key = formatDateKey(selectedDate);
-  const selectedShifts = availableSlots[key] || [];
+  const dateKey = formatDateKey(selectedDate);
+  const selectedForDay = selectedSlots[dateKey] || [];
 
   return (
     <View style={styles.container}>
-      {/* 🔹 Header */}
+      {/* ✅ Header xanh lá custom */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#fff" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerLeft}
+        >
+          <Icon name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lịch Rảnh Của PT</Text>
-        <View style={{ width: 30 }} />
+
+        <Text style={styles.headerTitle}>Lịch PT</Text>
+
+        <TouchableOpacity
+          style={styles.headerRight}
+          onPress={() => setMode(mode === 'month' ? 'week' : 'month')}
+        >
+          <Text style={styles.headerRightText}>
+            {mode === 'month' ? 'Tuần' : 'Tháng'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-        {/* 🔹 Điều hướng tháng */}
+        {/* 🔹 Điều hướng tháng / tuần */}
         <View style={styles.monthHeader}>
           <TouchableOpacity onPress={handlePrev}>
             <Icon name="chevron-left" size={30} color="#000" />
           </TouchableOpacity>
 
-          <Text style={styles.monthText}>
-            {getMonthName(month)} - {year}
-          </Text>
+          <TouchableOpacity
+            onPress={() => setMode(mode === 'month' ? 'week' : 'month')}
+          >
+            <Text style={styles.monthText}>
+              {mode === 'month'
+                ? `${getMonthName(month)} - ${year}`
+                : `${getDayLabel(
+                    weekDays[0],
+                  )} ${weekDays[0].getDate()} → ${getDayLabel(
+                    weekDays[6],
+                  )} ${weekDays[6].getDate()} ${getMonthName(
+                    weekDays[6].getMonth(),
+                  )}`}
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity onPress={handleNext}>
             <Icon name="chevron-right" size={30} color="#000" />
           </TouchableOpacity>
         </View>
 
-        {/* 🗓️ Lịch tháng */}
-        <View style={styles.calendarBox}>
-          <View style={styles.weekHeader}>
-            {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((d, i) => (
-              <Text key={i} style={styles.weekDay}>
-                {d}
-              </Text>
-            ))}
-          </View>
+        {/* 🗓️ Lịch hiển thị */}
+        {mode === 'month' ? (
+          <View style={styles.calendarBox}>
+            <View style={styles.weekHeader}>
+              {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((d, i) => (
+                <Text key={i} style={styles.weekDay}>
+                  {d}
+                </Text>
+              ))}
+            </View>
 
-          <View style={styles.daysGrid}>
-            {monthDays.map((day, index) => {
-              const isToday =
-                day &&
-                day === today.getDate() &&
-                month === today.getMonth() &&
-                year === today.getFullYear();
-              const isSelected =
-                day &&
-                selectedDate.getDate() === day &&
-                selectedDate.getMonth() === month &&
-                selectedDate.getFullYear() === year;
+            <View style={styles.daysGrid}>
+              {monthDays.map((day, index) => {
+                const isToday =
+                  day &&
+                  day === today.getDate() &&
+                  month === today.getMonth() &&
+                  year === today.getFullYear();
+                const isSelected =
+                  day &&
+                  selectedDate.getDate() === day &&
+                  selectedDate.getMonth() === month &&
+                  selectedDate.getFullYear() === year;
 
-              return (
-                <View key={index} style={styles.dayWrapper}>
-                  {day ? (
-                    <TouchableOpacity
-                      style={[
-                        styles.dayBox,
-                        isToday && styles.todayBox,
-                        isSelected && styles.selectedDayBox,
-                      ]}
-                      onPress={() => handleSelectDay(day)}
-                    >
-                      <Text
+                return (
+                  <View key={index} style={styles.dayWrapper}>
+                    {day ? (
+                      <TouchableOpacity
                         style={[
-                          styles.dayText,
-                          isSelected && { color: '#fff' },
-                          isToday && !isSelected && { color: '#20B24A' },
+                          styles.dayBox,
+                          isToday && styles.todayBox,
+                          isSelected && styles.selectedDayBox,
                         ]}
+                        onPress={() =>
+                          handleSelectDay(new Date(year, month, day))
+                        }
                       >
-                        {day}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.emptyBox} />
-                  )}
-                </View>
+                        <Text
+                          style={[
+                            styles.dayText,
+                            isSelected && { color: '#fff' },
+                            isToday && !isSelected && { color: '#20B24A' },
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.emptyBox} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.weekContainer}>
+            {weekDays.map((item, index) => {
+              const isSelected =
+                selectedDate.toDateString() === item.toDateString();
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.weekDayBox,
+                    isSelected && styles.selectedDayBox,
+                  ]}
+                  onPress={() => handleSelectDay(item)}
+                >
+                  <Text
+                    style={[styles.dayText, isSelected && { color: '#fff' }]}
+                  >
+                    {getDayLabel(item)}
+                  </Text>
+                  <Text
+                    style={[styles.dayText, isSelected && { color: '#fff' }]}
+                  >
+                    {item.getDate()}
+                  </Text>
+                </TouchableOpacity>
               );
             })}
           </View>
-        </View>
+        )}
 
-        {/* 🕒 Chọn ca làm */}
-        <View style={styles.shiftContainer}>
-          <Text style={styles.shiftTitle}>
-            Chọn ca rảnh cho {formatDateKey(selectedDate)}
-          </Text>
-
-          {SHIFTS.map(shift => {
-            const isSelected = selectedShifts.includes(shift.id);
-            return (
-              <TouchableOpacity
-                key={shift.id}
-                style={[styles.shiftBox, isSelected && styles.shiftSelected]}
-                onPress={() => toggleShift(shift.id)}
-              >
-                <Text
-                  style={[styles.shiftText, isSelected && { color: '#fff' }]}
+        {/* 📢 Chọn ca rảnh trong ngày */}
+        <View style={styles.noticeContainer}>
+          <Text style={styles.noticeTitle}>Chọn ca rảnh trong ngày</Text>
+          <View style={styles.slotContainer}>
+            {slots.map((slot, i) => {
+              const isSelected = selectedForDay.includes(slot.key);
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.slotBox, isSelected && styles.slotSelectedBox]}
+                  onPress={() => toggleSlot(dateKey, slot.key)}
                 >
-                  {shift.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text
+                    style={[styles.slotText, isSelected && { color: '#fff' }]}
+                  >
+                    {slot.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Lưu lịch rảnh</Text>
+            <Text style={styles.saveText}>Lưu lịch rảnh</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -227,14 +311,26 @@ export default PTFreeScheduleScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
+  // ✅ Header custom xanh lá
   header: {
-    backgroundColor: '#20B24A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    backgroundColor: '#20B24A',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
+  headerLeft: { padding: 4 },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  headerRight: {
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  headerRightText: { color: '#20B24A', fontSize: 15, fontWeight: '600' },
+
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -267,7 +363,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  dayWrapper: { width: boxSize, height: boxSize, marginBottom: gap },
+  dayWrapper: {
+    width: boxSize,
+    height: boxSize,
+    marginBottom: gap,
+  },
   dayBox: {
     width: '100%',
     height: '100%',
@@ -279,36 +379,43 @@ const styles = StyleSheet.create({
   todayBox: { borderWidth: 2, borderColor: '#20B24A' },
   selectedDayBox: { backgroundColor: '#20B24A' },
   emptyBox: { width: '100%', height: '100%' },
+  weekContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+  },
+  weekDayBox: {
+    width: boxSize,
+    height: boxSize * 1.1,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+  },
   dayText: { fontSize: 15, fontWeight: '600', color: '#000' },
-
-  shiftContainer: { marginTop: 20, marginHorizontal: 16 },
-  shiftTitle: {
+  noticeContainer: { marginTop: 20, marginHorizontal: 16 },
+  noticeTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#20B24A',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  shiftBox: {
+  slotContainer: { flexDirection: 'column', gap: 10, marginBottom: 20 },
+  slotBox: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#20B24A',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#E8F5E9',
   },
-  shiftSelected: { backgroundColor: '#20B24A' },
-  shiftText: { fontSize: 15, color: '#000', fontWeight: '600' },
+  slotSelectedBox: { backgroundColor: '#20B24A' },
+  slotText: { fontSize: 15, fontWeight: '600', color: '#000' },
   saveButton: {
     backgroundColor: '#20B24A',
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 10,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    textAlign: 'center',
-    fontSize: 16,
-  },
+  saveText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

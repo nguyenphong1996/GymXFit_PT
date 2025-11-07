@@ -28,6 +28,7 @@ const SKILL_OPTIONS = [
 ];
 
 const UpdatePTProfileScreen = ({ navigation }) => {
+  // 🧩 State
   const [name, setName] = useState('Huấn luyện viên Nguyễn Văn Nam');
   const [email, setEmail] = useState('namfit@example.com');
   const [phone] = useState('0909 123 456');
@@ -35,48 +36,62 @@ const UpdatePTProfileScreen = ({ navigation }) => {
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChooseAvatar = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.7,
-    });
-    if (result.didCancel) return;
-    const image = result.assets?.[0];
-    if (!image) return;
-    setAvatar(image.uri);
-    Alert.alert('✅ Thành công', 'Ảnh đại diện đã được chọn.');
+  // 🖼️ Chọn ảnh đại diện (phiên bản an toàn)
+  const handleChooseAvatar = () => {
+    launchImageLibrary({ mediaType: 'photo', quality: 0.7 })
+      .then(result => {
+        if (result.didCancel) return;
+        const image = result.assets?.[0];
+        if (!image) return;
+        setAvatar(image.uri);
+        Alert.alert('✅ Thành công', 'Ảnh đại diện đã được chọn.');
+      })
+      .catch(err => {
+        console.warn('Lỗi chọn ảnh:', err);
+      });
   };
 
+  // 🧠 Toggle skill
   const handleToggleSkill = skill => {
     setSelectedSkills(prev =>
       prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill],
     );
   };
 
+  // 💾 Cập nhật hồ sơ
   const handleUpdate = () => {
-    Alert.alert('✅ Thành công', 'Hồ sơ PT đã được cập nhật (demo).');
-    navigation.goBack();
+    if (!name.trim() || !email.trim()) {
+      Alert.alert('⚠️ Lỗi', 'Vui lòng nhập đầy đủ họ tên và email.');
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert('✅ Thành công', 'Hồ sơ PT đã được cập nhật.', [
+        { text: 'OK', onPress: () => navigation.navigate('PTProfileScreen') },
+      ]);
+    }, 1200);
   };
 
   const avatarSource = avatar
     ? { uri: avatar }
     : require('@assets/images/avt.png');
 
+  // 📱 Giao diện
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
-
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={26} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
-        </View>
-
-        {/* 🟩 Banner */}
+        {/* 🟢 Banner (kèm nút quay lại) */}
         <View style={styles.banner}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.navigate('PTProfileScreen')}
+          >
+            <Icon name="arrow-back" size={28} color="#333" />
+          </TouchableOpacity>
+
           <View style={styles.avatarContainer}>
             <Image source={avatarSource} style={styles.avatar} />
             <TouchableOpacity
@@ -86,8 +101,10 @@ const UpdatePTProfileScreen = ({ navigation }) => {
               <Icon name="photo-camera" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
+
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.email}>{email}</Text>
+
           <View style={styles.infoBox}>
             <Text style={styles.infoValue}>
               {selectedSkills[0] || 'Chưa có'}
@@ -168,18 +185,7 @@ export default UpdatePTProfileScreen;
 /* === STYLES === */
 const styles = StyleSheet.create({
   scrollContainer: { paddingBottom: 40 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginLeft: 10,
-  },
+
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
@@ -187,8 +193,15 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
     marginBottom: 15,
+    position: 'relative',
   },
-  avatarContainer: { position: 'relative', marginBottom: 10 },
+  backButton: {
+    position: 'absolute',
+    top: 15,
+    left: 20,
+    padding: 5,
+  },
+  avatarContainer: { position: 'relative', marginBottom: 10, marginTop: 20 },
   avatar: {
     width: 120,
     height: 120,

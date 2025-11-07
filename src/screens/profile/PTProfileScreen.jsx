@@ -1,4 +1,3 @@
-// 📁 src/screens/PT/PTProfileScreen.js
 import React from 'react';
 import {
   View,
@@ -33,71 +32,81 @@ const PTProfileScreen = () => {
     ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
 
   return (
-    <ScrollView style={styles.container}>
-      <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* 🟩 Banner */}
-      <View style={styles.banner}>
-        <View style={styles.avatarContainer}>
-          {ptData.avatar ? (
-            <Image style={styles.avatar} source={{ uri: ptData.avatar }} />
-          ) : (
-            <View style={[styles.avatar, styles.iconAvatar]}>
-              <IconMC name="account-circle" size={110} color="#A5D6A7" />
+      {/* 🔙 Nút back góc trái không nền */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate('HomePTScreen')}
+      >
+        <IconIon name="arrow-back" size={28} color="#000" />
+      </TouchableOpacity>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* 🟩 Banner */}
+        <View style={styles.banner}>
+          <View style={styles.avatarContainer}>
+            {ptData.avatar ? (
+              <Image style={styles.avatar} source={{ uri: ptData.avatar }} />
+            ) : (
+              <View style={[styles.avatar, styles.iconAvatar]}>
+                <IconMC name="account-circle" size={110} color="#A5D6A7" />
+              </View>
+            )}
+          </View>
+          <Text style={styles.name}>{ptData.name}</Text>
+          <Text style={styles.email}>{ptData.email}</Text>
+
+          {/* 🟢 Info Box (Chuyên môn) */}
+          <View style={styles.infoBox}>
+            <View style={styles.statBoxFull}>
+              <Text style={styles.statValue}>{specialty}</Text>
+              <Text style={styles.statLabel}>Chuyên môn</Text>
             </View>
-          )}
-        </View>
-        <Text style={styles.name}>{ptData.name}</Text>
-        <Text style={styles.email}>{ptData.email}</Text>
-
-        {/* 🟢 Info Box (Chuyên môn) */}
-        <View style={styles.infoBox}>
-          <View style={styles.statBoxFull}>
-            <Text style={styles.statValue}>{specialty}</Text>
-            <Text style={styles.statLabel}>Chuyên môn</Text>
           </View>
         </View>
-      </View>
 
-      {/* ⚙️ Danh mục chức năng */}
-      <View style={styles.optionContainer}>
-        <OptionItem
-          iconLib="MI"
-          icon="edit"
-          text="Chỉnh sửa hồ sơ"
-          onPress={() => navigation.navigate('UpdatePTProfileScreen')}
-        />
-        <OptionItem
-          iconLib="Ion"
-          icon="calendar-outline"
-          text="Lịch làm việc"
-          onPress={() => {}}
-        />
-        <OptionItem
-          iconLib="MI"
-          icon="group"
-          text="Danh sách học viên"
-          onPress={() => {}}
-        />
-        <OptionItem
-          iconLib="Ion"
-          icon="document-text-outline"
-          text="Hợp đồng huấn luyện"
-          onPress={() => {}}
-        />
-      </View>
+        {/* ⚙️ Danh mục chức năng */}
+        <View style={styles.optionContainer}>
+          <OptionItem
+            iconLib="MI"
+            icon="edit"
+            text="Chỉnh sửa hồ sơ"
+            onPress={() => navigation.navigate('UpdatePTProfileScreen')}
+          />
+          <OptionItem
+            iconLib="Ion"
+            icon="calendar-outline"
+            text="Lịch làm việc"
+            onPress={() => navigation.navigate('PTFreeScheduleScreen')}
+          />
+          <OptionItem
+            iconLib="MI"
+            icon="group"
+            text="Danh sách học viên"
+            onPress={() => {}}
+          />
+          <OptionItem
+            iconLib="Ion"
+            icon="document-text-outline"
+            text="Hợp đồng huấn luyện"
+            onPress={() => {}}
+          />
+        </View>
 
-      {/* 🔴 Nút đăng xuất */}
-      <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
-        <IconMI
-          name="logout"
-          size={22}
-          color="#fff"
-          style={{ marginRight: 8 }}
-        />
-        <Text style={styles.logoutText}>Đăng xuất</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* 🔴 Nút đăng xuất */}
+        <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+          <IconMI
+            name="logout"
+            size={22}
+            color="#fff"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.logoutText}>Đăng xuất</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -119,6 +128,15 @@ export default PTProfileScreen;
 /* === STYLES === */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  /* 🔙 Back icon góc trái */
+  backButton: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    zIndex: 20,
+  },
+
   banner: {
     backgroundColor: LIGHT_GREEN,
     alignItems: 'center',
