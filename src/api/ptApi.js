@@ -1,109 +1,46 @@
 // 📁 src/api/ptApi.js
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import createAxiosInstance from '@api/axiosInstance';
 
-// 🔹 Thay URL này bằng API thật của bạn:
-const BASE_URL = 'https://gymxfit-api.azurewebsites.net/api/admin';
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 20000,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// 🔹 Thêm token tự động nếu có
-api.interceptors.request.use(
-  async config => {
-    const token = await AsyncStorage.getItem('authToken');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  },
-  error => Promise.reject(error),
-);
-
-// 🔹 Xử lý lỗi chung
-const handleError = err => {
-  console.error('PT API Error:', err);
-  if (err.response?.data) {
-    throw new Error(
-      err.response.data.message || JSON.stringify(err.response.data),
-    );
-  }
-  throw err;
-};
-
-// === 🟩 API functions ===
-
-// 🔸 Lấy chi tiết PT
-export const getPTDetail = async staffId => {
+// 📨 Gửi OTP đăng nhập cho PT
+export async function requestLoginOtp(phoneNumber) {
   try {
-    const res = await api.get(`/staff/${staffId}`);
-    return res.data?.data ?? res.data;
-  } catch (err) {
-    handleError(err);
-  }
-};
-
-// 🔸 Cập nhật hồ sơ PT
-export const updatePTProfile = async (staffId, body) => {
-  try {
-    const res = await api.patch(`/staff/${staffId}`, body);
-    return res.data?.data ?? res.data;
-  } catch (err) {
-    handleError(err);
-  }
-};
-
-// 🔸 Upload avatar
-export const uploadPTAvatar = async (staffId, fileUri, mime = 'image/jpeg') => {
-  try {
-    const formData = new FormData();
-    formData.append('avatar', {
-      uri: fileUri,
-      type: mime,
-      name: `avatar_${Date.now()}.jpg`,
+    const response = await createAxiosInstance().post('/api/auth/login', {
+      phone: phoneNumber,
     });
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.error || 'Không thể gửi mã OTP, vui lòng thử lại.';
+    console.error('requestLoginOtp ERROR:', errorMessage);
+    throw new Error(errorMessage);
+  }
+}
 
-    const res = await api.put(`/staff/${staffId}/avatar`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+// ✅ Xác thực OTP đăng nhập PT
+export async function verifyLoginOtp(phoneNumber, code) {
+  try {
+    const response = await createAxiosInstance().post('/api/auth/verify-login', {
+      phone: phoneNumber,
+      code: code,
     });
-    return res.data?.data ?? res.data;
-  } catch (err) {
-    handleError(err);
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.';
+    console.error('verifyLoginOtp ERROR:', errorMessage);
+    throw new Error(errorMessage);
   }
-};
+}
 
-// 🔸 Lấy danh sách kỹ năng
-export const getAllSkills = async () => {
-  try {
-    const res = await api.get(`/skills`);
-    return res.data?.data ?? res.data;
-  } catch (err) {
-    console.warn('⚠️ Không thể lấy skills từ server, dùng danh sách mặc định');
-    return [
-      { id: 1, name: 'Workout' },
-      { id: 2, name: 'Cardio' },
-      { id: 3, name: 'Stretching' },
-      { id: 4, name: 'Nutrition' },
-      { id: 5, name: 'Yoga' },
-    ];
-  }
-};
-
-// 🔸 Admin phê duyệt kỹ năng (nếu có quyền)
-export const approvePTSkills = async (staffId, skills) => {
-  try {
-    const res = await api.patch(`/staff/${staffId}/skills/approve`, { skills });
-    return res.data?.data ?? res.data;
-  } catch (err) {
-    handleError(err);
-  }
-};
-
-export default {
-  getPTDetail,
-  updatePTProfile,
-  uploadPTAvatar,
-  getAllSkills,
-  approvePTSkills,
-};
+// // 👤 Lấy thông tin hồ sơ PT
+// export async function getProfile() {
+//   try {
+//     const response = await createAxiosInstance().get('/api/pt/profile');
+//     return response;
+//   } catch (error) {
+//     const errorMessage =
+//       error.response?.data?.message || 'Không thể tải thông tin PT.';
+//     console.error('getProfile ERROR:', errorMessage);
+//     throw new Error(errorMessage);
+//   }
+// }

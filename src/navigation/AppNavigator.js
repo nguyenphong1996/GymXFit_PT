@@ -4,7 +4,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { UserContext } from '@context/UserContext';
+// 🔹 SỬA IMPORT CONTEXT
+import { PTContext } from '@context/PTContext';
 
 // 🧭 Import các navigator và màn hình
 import AuthNavigator from '@navigation/AuthNavigator';
@@ -15,7 +16,8 @@ import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-  const { userToken, isLoading } = useContext(UserContext);
+  // 🔹 Dùng PTContext thay vì UserContext
+  const { userToken, isLoading } = useContext(PTContext);
 
   // 🌀 Hiển thị loading khi đang xác thực
   if (isLoading) {

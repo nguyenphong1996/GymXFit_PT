@@ -1,9 +1,9 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
+import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { UserProvider } from '@context/UserContext';
+import { PTProvider } from '@context/PTContext'; // ✅ Sử dụng đúng PTProvider
 import AppNavigator from '@navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,11 +15,13 @@ const App = (): React.JSX.Element => {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <SafeAreaProvider style={styles.container}>
+    <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <UserProvider>
-        <AppNavigator />
-      </UserProvider>
+      <PTProvider>
+        <View style={styles.container}>
+          <AppNavigator />
+        </View>
+      </PTProvider>
     </SafeAreaProvider>
   );
 };
@@ -28,8 +30,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    width: '100%',
-    height: '100%',
   },
 });
 

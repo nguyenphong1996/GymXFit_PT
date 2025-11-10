@@ -1,5 +1,4 @@
-// ✅ VerifyLoginScreen.js
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,33 +11,24 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute } from '@react-navigation/native';
-import { verifyLoginOtp, requestLoginOtp } from '@api/userApi';
-import { UserContext } from '@context/UserContext';
+import { verifyLoginOtp, requestLoginOtp } from '@api/ptApi';
+import { PTContext } from '@context/PTContext';
 
 const VerifyLoginScreen = ({ navigation }) => {
   const route = useRoute();
-  const { phone } = route.params || {}; // ✅ Ngăn lỗi undefined
+  const { phone } = route.params || {};
+  const { login } = useContext(PTContext);
 
   const [code, setCode] = useState(['', '', '', '']);
   const [countdown, setCountdown] = useState(60);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const inputsRef = useRef([]);
-  const { login } = useContext(UserContext);
 
-  // ⏳ Đếm ngược thời gian gửi lại mã
   useEffect(() => {
     let timer;
     if (countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      timer = setInterval(() => setCountdown(prev => prev - 1), 1000);
     }
     return () => clearInterval(timer);
   }, [countdown]);
@@ -50,43 +40,24 @@ const VerifyLoginScreen = ({ navigation }) => {
       next[index] = char;
       return next;
     });
-    if (char !== '' && index < 3) {
-      inputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleAutoFill = fullText => {
-    const digits = fullText.replace(/\D/g, '').slice(0, 4).split('');
-    if (digits.length === 4) {
-      setCode(digits);
-      Keyboard.dismiss();
-    }
+    if (char && index < 3) inputsRef.current[index + 1]?.focus();
   };
 
   const handleContinue = async () => {
-    if (!phone) {
-      Alert.alert(
-        'Lỗi',
-        'Không có thông tin số điện thoại. Vui lòng quay lại.',
-      );
-      return;
-    }
-
+    if (!phone) return Alert.alert('Lỗi', 'Thiếu số điện thoại.');
     const otp = code.join('');
-    if (otp.length !== 4) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đủ 4 chữ số mã xác thực.');
-      return;
-    }
+    if (otp.length !== 4)
+      return Alert.alert('Lỗi', 'Vui lòng nhập đủ 4 chữ số.');
 
     Keyboard.dismiss();
     setIsVerifying(true);
-
     try {
       const response = await verifyLoginOtp(phone, otp);
-      if (response.ok && response.token) {
+      if (response.ok && response.token && response.user?.role === 'PT') {
         await login(response.token, response.user);
+        navigation.reset({ index: 0, routes: [{ name: 'PTProfileScreen' }] });
       } else {
-        throw new Error(response.message || 'Xác thực thất bại');
+        throw new Error('Không tìm thấy PT');
       }
     } catch (error) {
       Alert.alert('Đăng nhập thất bại', error.message);
@@ -102,7 +73,7 @@ const VerifyLoginScreen = ({ navigation }) => {
     setIsResending(true);
     try {
       await requestLoginOtp(phone);
-      Alert.alert('Thành công', 'Mã xác thực đã được gửi lại!');
+      Alert.alert('Thành công', 'Mã OTP đã được gửi lại!');
       setCountdown(60);
     } catch (error) {
       Alert.alert('Lỗi', error.message);
@@ -111,13 +82,12 @@ const VerifyLoginScreen = ({ navigation }) => {
     }
   };
 
-  // 🛑 Nếu không có phone, hiển thị thông báo thay vì crash app
-  if (!phone) {
+  if (!phone)
     return (
       <View style={styles.missingPhoneContainer}>
         <Ionicons name="alert-circle-outline" size={60} color="red" />
         <Text style={styles.missingPhoneText}>
-          Thiếu thông tin số điện thoại. Vui lòng quay lại màn hình đăng nhập.
+          Thiếu thông tin số điện thoại. Vui lòng quay lại.
         </Text>
         <TouchableOpacity
           style={styles.backToLoginButton}
@@ -127,11 +97,9 @@ const VerifyLoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     );
-  }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.headerButton}
@@ -139,9 +107,7 @@ const VerifyLoginScreen = ({ navigation }) => {
         >
           <Ionicons name="arrow-back-outline" size={26} color="black" />
         </TouchableOpacity>
-
         <Text style={styles.title}>Xác minh</Text>
-
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => navigation.navigate('LoginPTScreen')}
@@ -150,12 +116,10 @@ const VerifyLoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Nội dung */}
       <View style={styles.content}>
         <Text style={styles.subtitle}>
           Nhập mã gồm 4 chữ số mà GymXFit vừa gửi đến {phone}
         </Text>
-
         <View style={styles.inputContainer}>
           {code.map((digit, index) => (
             <TextInput
@@ -166,10 +130,6 @@ const VerifyLoginScreen = ({ navigation }) => {
               onChangeText={text => handleChange(text, index)}
               keyboardType="number-pad"
               maxLength={1}
-              onTextInput={e => {
-                const text = e.nativeEvent?.text || '';
-                if (text.length > 1) handleAutoFill(text);
-              }}
             />
           ))}
         </View>
@@ -208,34 +168,22 @@ const VerifyLoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  buttonDisabled: {
-    backgroundColor: '#A5D6A7',
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
+  buttonDisabled: { backgroundColor: '#A5D6A7' },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
   },
-  headerButton: {
-    padding: 10,
-  },
+  headerButton: { padding: 10 },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     color: 'black',
     textAlign: 'center',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   subtitle: {
     fontSize: 16,
     color: 'black',
@@ -266,23 +214,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  resendText: {
-    marginTop: 20,
-    color: 'black',
-    textAlign: 'center',
-  },
-  resendLink: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  resendDisabled: {
-    color: 'gray',
-  },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  resendText: { marginTop: 20, color: 'black', textAlign: 'center' },
+  resendLink: { color: '#4CAF50', fontWeight: 'bold' },
+  resendDisabled: { color: 'gray' },
   missingPhoneContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -302,10 +237,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
   },
-  backToLoginText: {
-    color: '#fff',
-    fontSize: 16,
-  },
+  backToLoginText: { color: '#fff', fontSize: 16 },
 });
 
 export default VerifyLoginScreen;
