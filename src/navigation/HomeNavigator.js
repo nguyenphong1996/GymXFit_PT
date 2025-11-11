@@ -14,6 +14,8 @@ import PTLessonHistoryScreen from '@screens/workouts/PTLessonHistoryScreen';
 import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
 import QrScannerModel from '@screens/qr/QrScannerModel';
+import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -40,7 +42,9 @@ const HomeNavigator = () => (
       name="PTFreeScheduleScreen"
       component={PTFreeScheduleScreen}
     />
-    <Stack.Screen name="QrScannerModel" component={QrScannerModel}/>
+    <Stack.Screen name="QrScannerModel" component={QrScannerModel} />
+    <Stack.Screen name="PTCustomerDetailScreen" component={PTCustomerDetailScreen} />
+    
   </Stack.Navigator>
 );
 

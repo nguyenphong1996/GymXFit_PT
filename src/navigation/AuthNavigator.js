@@ -12,6 +12,7 @@ import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
 import QrScannerModel from '@screens/qr/QrScannerModel';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
+import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen'
 
 
 
@@ -20,7 +21,7 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="LoginPTScreen"
+    initialRouteName="PTCustomerListScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />
@@ -45,6 +46,10 @@ const AuthNavigator = () => (
     <Stack.Screen
       name="PTFreeScheduleScreen"
       component={PTFreeScheduleScreen}
+    />
+    <Stack.Screen
+      name="PTCustomerDetailScreen"
+      component={PTCustomerDetailScreen}
     />
   </Stack.Navigator>
 );

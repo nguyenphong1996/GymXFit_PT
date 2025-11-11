@@ -4,26 +4,27 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// 🔹 SỬA IMPORT CONTEXT
+// 🔹 Import PTContext (chứa token, trạng thái loading)
 import { PTContext } from '@context/PTContext';
 
-// 🧭 Import các navigator và màn hình
+// 🧭 Import các navigator & màn hình
 import AuthNavigator from '@navigation/AuthNavigator';
 import HomeNavigator from '@navigation/HomeNavigator';
 import QrScannerModel from '@screens/qr/QrScannerModel';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
+import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
+import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen'; // 🔹 Thêm chi tiết KH nếu có
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-  // 🔹 Dùng PTContext thay vì UserContext
   const { userToken, isLoading } = useContext(PTContext);
 
-  // 🌀 Hiển thị loading khi đang xác thực
+  // 🌀 Hiển thị vòng loading khi đang xác thực
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color="#20B24A" />
       </View>
     );
   }
@@ -31,23 +32,23 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={userToken ? 'HomeApp' : 'Auth'}
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          gestureEnabled: true, // Cho phép vuốt để quay lại (iOS)
+          gestureEnabled: true,
         }}
-        initialRouteName={userToken ? 'HomeApp' : 'Auth'}
       >
         {userToken ? (
           <>
-            {/* 🔹 Navigator chính sau khi đăng nhập */}
+            {/* 🔹 Giao diện chính sau đăng nhập */}
             <Stack.Screen
               name="HomeApp"
               component={HomeNavigator}
-              options={{ gestureEnabled: false }} // Tắt vuốt trong navigator chính
+              options={{ gestureEnabled: false }}
             />
 
-            {/* 🔹 Các màn hình có thể mở từ nhiều nơi */}
+            {/* 🔹 Các màn riêng biệt (truy cập từ nhiều chỗ) */}
             <Stack.Screen
               name="PTFreeScheduleScreen"
               component={PTFreeScheduleScreen}
@@ -68,16 +69,32 @@ const AppNavigator = () => {
                 headerBackTitleVisible: false,
               }}
             />
-          </>
-        ) : (
-          <>
-            {/* 🔹 Navigator cho phần đăng nhập */}
+
             <Stack.Screen
-              name="Auth"
-              component={AuthNavigator}
-              options={{ gestureEnabled: false }}
+              name="PTCustomerListScreen"
+              component={PTCustomerListScreen}
+              options={{
+                headerShown: true,
+                title: 'Danh sách khách hàng',
+                headerBackTitleVisible: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="PTCustomerDetailScreen"
+              component={PTCustomerDetailScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
             />
           </>
+        ) : (
+          <Stack.Screen
+            name="Auth"
+            component={AuthNavigator}
+            options={{ gestureEnabled: false }}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>

@@ -18,18 +18,27 @@ const PTCustomerListScreen = ({ navigation }) => {
       id: 1,
       name: 'Nguyễn Văn A',
       phone: '0901234567',
+      age: 28,
+      weight: 70,
+      height: 175,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
     },
     {
       id: 2,
       name: 'Trần Thị B',
       phone: '0934567890',
+      age: 25,
+      weight: 55,
+      height: 165,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
     },
     {
       id: 3,
       name: 'Lê Văn C',
       phone: '0912345678',
+      age: 30,
+      weight: 80,
+      height: 180,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
     },
   ];
@@ -75,6 +84,15 @@ const PTCustomerListScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: '#FFA000' }]}
+                onPress={() =>
+                  navigation.navigate('PTCustomerDetailScreen', { customer: c })
+                }
+              >
+                <Text style={styles.btnText}>Xem chi tiết</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: '#20B24A' }]}
                 onPress={() =>
