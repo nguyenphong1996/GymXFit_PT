@@ -1,37 +1,29 @@
-import React, { useState, useRef, useContext, useEffect } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute } from '@react-navigation/native';
-import { verifyLoginOtp, requestLoginOtp } from '@api/ptApi';
+import { verifyLoginOtp } from '@api/ptApi';
 import { PTContext } from '@context/PTContext';
+import { useToast } from '@context/ToastContext';
+import translateStaffAuthError from '../../utils/translateStaffAuthError';
 
 const VerifyLoginScreen = ({ navigation }) => {
   const route = useRoute();
-  const { phone } = route.params || {};
+  const { phone, purpose = 'login' } = route.params || {};
   const { login } = useContext(PTContext);
+  const { showToast } = useToast();
 
   const [code, setCode] = useState(['', '', '', '']);
-  const [countdown, setCountdown] = useState(60);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const inputsRef = useRef([]);
-
-  useEffect(() => {
-    let timer;
-    if (countdown > 0) {
-      timer = setInterval(() => setCountdown(prev => prev - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
 
   const handleChange = (text, index) => {
     const char = text.replace(/[^0-9]/g, '').slice(0, 1);
@@ -44,41 +36,56 @@ const VerifyLoginScreen = ({ navigation }) => {
   };
 
   const handleContinue = async () => {
-    if (!phone) return Alert.alert('Lỗi', 'Thiếu số điện thoại.');
+    if (!phone) {
+      showToast({
+        type: 'warning',
+        title: 'Thiếu thông tin',
+        message: 'Thiếu số điện thoại để xác minh OTP.',
+      });
+      return;
+    }
     const otp = code.join('');
-    if (otp.length !== 4)
-      return Alert.alert('Lỗi', 'Vui lòng nhập đủ 4 chữ số.');
+    if (otp.length !== 4) {
+      showToast({
+        type: 'warning',
+        title: 'OTP chưa đủ 4 số',
+        message: 'Vui lòng nhập chính xác 4 chữ số.',
+      });
+      return;
+    }
 
     Keyboard.dismiss();
     setIsVerifying(true);
     try {
-      const response = await verifyLoginOtp(phone, otp);
-      if (response.ok && response.token && response.user?.role === 'PT') {
-        await login(response.token, response.user);
-        navigation.reset({ index: 0, routes: [{ name: 'PTProfileScreen' }] });
-      } else {
-        throw new Error('Không tìm thấy PT');
+      const response = await verifyLoginOtp(phone, otp, purpose);
+      const token = response?.token;
+      const user = response?.user || response?.staff;
+      const normalizedRole =
+        typeof user?.role === 'string' ? user.role.toLowerCase() : null;
+
+      if (
+        !token ||
+        (normalizedRole &&
+          normalizedRole !== 'pt' &&
+          normalizedRole !== 'staff')
+      ) {
+        throw new Error('Không tìm thấy PT hoặc tài khoản không hợp lệ.');
       }
+
+      await login(token, user);
+      showToast({
+        type: 'success',
+        title: 'Đăng nhập thành công',
+        message: 'Chào mừng bạn trở lại GymXFit!',
+      });
     } catch (error) {
-      Alert.alert('Đăng nhập thất bại', error.message);
+      showToast({
+        type: 'error',
+        title: 'Đăng nhập thất bại',
+        message: translateStaffAuthError(error),
+      });
     } finally {
       setIsVerifying(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (countdown > 0 || isResending) return;
-    if (!phone) return Alert.alert('Lỗi', 'Thiếu số điện thoại để gửi lại mã.');
-
-    setIsResending(true);
-    try {
-      await requestLoginOtp(phone);
-      Alert.alert('Thành công', 'Mã OTP đã được gửi lại!');
-      setCountdown(60);
-    } catch (error) {
-      Alert.alert('Lỗi', error.message);
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -145,23 +152,6 @@ const VerifyLoginScreen = ({ navigation }) => {
             <Text style={styles.buttonText}>Tiếp tục</Text>
           )}
         </TouchableOpacity>
-
-        <Text style={styles.resendText}>
-          Chưa nhận được mã?{' '}
-          <Text
-            style={[
-              styles.resendLink,
-              (countdown > 0 || isResending) && styles.resendDisabled,
-            ]}
-            onPress={handleResendCode}
-          >
-            {isResending
-              ? 'Đang gửi...'
-              : countdown > 0
-              ? `Gửi lại sau ${countdown}s`
-              : 'Gửi lại'}
-          </Text>
-        </Text>
       </View>
     </View>
   );
@@ -215,9 +205,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  resendText: { marginTop: 20, color: 'black', textAlign: 'center' },
-  resendLink: { color: '#4CAF50', fontWeight: 'bold' },
-  resendDisabled: { color: 'gray' },
   missingPhoneContainer: {
     flex: 1,
     justifyContent: 'center',

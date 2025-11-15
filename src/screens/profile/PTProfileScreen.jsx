@@ -7,18 +7,17 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
+  Alert,
 } from 'react-native';
 import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import IconIon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { PTContext } from '@context/PTContext';
 
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
 
-const PTProfileScreen = () => {
-  const navigation = useNavigation();
-
+const PTProfileScreenContent = ({ navigation, logout }) => {
   // 🔹 Dữ liệu mẫu (hiển thị tĩnh)
   const ptData = {
     name: 'Huấn luyện viên Nguyễn Văn Nam',
@@ -30,6 +29,31 @@ const PTProfileScreen = () => {
 
   const specialty =
     ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
+
+  const handleLogout = () => {
+    if (typeof logout !== 'function') {
+      Alert.alert('Lỗi', 'Không thể đăng xuất, vui lòng thử lại sau.');
+      return;
+    }
+
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (error) {
+            Alert.alert(
+              'Lỗi',
+              error?.message || 'Không thể đăng xuất, vui lòng thử lại.',
+            );
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
@@ -96,7 +120,7 @@ const PTProfileScreen = () => {
         </View>
 
         {/* 🔴 Nút đăng xuất */}
-        <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconMI
             name="logout"
             size={22}
@@ -122,6 +146,14 @@ const OptionItem = ({ iconLib, icon, text, onPress }) => {
     </TouchableOpacity>
   );
 };
+
+const PTProfileScreen = props => (
+  <PTContext.Consumer>
+    {({ logout }) => (
+      <PTProfileScreenContent {...props} logout={logout} />
+    )}
+  </PTContext.Consumer>
+);
 
 export default PTProfileScreen;
 

@@ -6,46 +6,86 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
   ActivityIndicator,
-  Linking,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { requestLoginOtp } from '@api/ptApi';
 import { PTContext } from '@context/PTContext';
+import { useToast } from '@context/ToastContext';
+import translateStaffAuthError from '../../utils/translateStaffAuthError';
 
 const LoginPTScreen = ({ navigation }) => {
   const [mobileNumber, setMobileNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { logout } = useContext(PTContext);
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     const trimmedNumber = mobileNumber.trim();
-    if (!trimmedNumber)
-      return Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại.');
-    if (trimmedNumber.length !== 10)
-      return Alert.alert('Lỗi', 'Số điện thoại phải 10 chữ số.');
+    if (!trimmedNumber) {
+      showToast({
+        type: 'warning',
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập số điện thoại.',
+      });
+      return;
+    }
+    if (trimmedNumber.length !== 10) {
+      showToast({
+        type: 'warning',
+        title: 'Số điện thoại chưa hợp lệ',
+        message: 'Số điện thoại phải gồm đúng 10 chữ số.',
+      });
+      return;
+    }
+
+    const requestOtp = async (purpose, successMessage) => {
+      await requestLoginOtp(trimmedNumber, purpose);
+      const otpMessage =
+        successMessage || 'Mã OTP đã được gửi đến số điện thoại của bạn.';
+      showToast({
+        type: purpose === 'first_login' ? 'warning' : 'success',
+        title: 'Thành công',
+        message: otpMessage,
+      });
+      navigation.navigate('VerifyLoginScreen', {
+        phone: trimmedNumber,
+        purpose,
+      });
+    };
 
     setIsLoading(true);
     try {
-      await requestLoginOtp(trimmedNumber);
-      Alert.alert(
-        'Thành công',
-        'Mã OTP đã được gửi đến số điện thoại của bạn.',
-      );
-      navigation.navigate('VerifyLoginScreen', { phone: trimmedNumber });
+      await requestOtp('login');
+      return;
     } catch (error) {
-      Alert.alert('Đăng nhập thất bại', 'Tài khoản PT không tồn tại hoặc chưa được xác minh. Vui lòng liên hệ với quản trị viên.');
-      logout(); // reset PTContext nếu login thất bại
+      if (error?.code === 'staff_not_verified') {
+        try {
+          await requestOtp(
+            'first_login',
+            'Đây là lần đăng nhập đầu tiên, mã OTP kích hoạt đã được gửi.',
+          );
+          return;
+        } catch (firstLoginError) {
+          showToast({
+            type: 'error',
+            title: 'Đăng nhập thất bại',
+            message: translateStaffAuthError(firstLoginError),
+          });
+          await logout();
+          return;
+        }
+      }
+
+      showToast({
+        type: 'error',
+        title: 'Đăng nhập thất bại',
+        message: translateStaffAuthError(error),
+      });
+      await logout(); // reset PTContext nếu login thất bại
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCall = () => {
-    Linking.openURL('tel:0912345678').catch(() =>
-      Alert.alert('Lỗi', 'Không thể mở ứng dụng điện thoại.'),
-    );
   };
 
   return (
@@ -89,13 +129,6 @@ const LoginPTScreen = ({ navigation }) => {
           </View>
         )}
       </TouchableOpacity>
-
-      <Text style={styles.registerText}>
-        Gặp sự cố khi đăng nhập?{' '}
-        <Text style={styles.registerLink} onPress={handleCall}>
-          Liên hệ với chúng tôi
-        </Text>
-      </Text>
     </View>
   );
 };
@@ -142,15 +175,4 @@ const styles = StyleSheet.create({
   buttonDisabled: { backgroundColor: '#A5D6A7' },
   buttonContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  registerText: {
-    marginTop: 10,
-    color: '#000',
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  registerLink: {
-    color: '#20B24A',
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
 });

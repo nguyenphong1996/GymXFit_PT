@@ -4,6 +4,7 @@ import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { PTProvider } from '@context/PTContext'; // ✅ Sử dụng đúng PTProvider
+import { ToastProvider } from '@context/ToastContext';
 import AppNavigator from '@navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,12 +17,14 @@ const App = (): React.JSX.Element => {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <PTProvider>
-        <View style={styles.container}>
-          <AppNavigator />
-        </View>
-      </PTProvider>
+      <ToastProvider>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <PTProvider>
+          <View style={styles.container}>
+            <AppNavigator />
+          </View>
+        </PTProvider>
+      </ToastProvider>
     </SafeAreaProvider>
   );
 };
