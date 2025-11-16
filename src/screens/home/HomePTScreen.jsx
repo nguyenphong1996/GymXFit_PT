@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
+import PTBottomScanBar from '../../components/PTBottomScanBar';
 
 const HomePTScreen = ({ navigation }) => {
   React.useEffect(() => {
@@ -37,51 +38,57 @@ const HomePTScreen = ({ navigation }) => {
   ];
 
   return (
-    <View style={styles.container}>
-      {/* 🟩 Header gồm logo và nút quét QR */}
-      <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require('@assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.title}>GymXFit PT</Text>
+    <View style={styles.screen}>
+      <View style={styles.container}>
+        {/* 🟩 Header gồm logo và nút quét QR */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('@assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>GymXFit PT</Text>
+          </View>
+
+          {/* 🟩 Nút QR ở góc phải */}
+          <TouchableOpacity
+            style={styles.qrButton}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('QrScannerModel')} // ✅ Chuyển đến QrScannerModel
+          >
+            <Icon name="qr-code-scanner" size={28} color="#20B24A" />
+          </TouchableOpacity>
         </View>
 
-        {/* 🟩 Nút QR ở góc phải */}
-        <TouchableOpacity
-          style={styles.qrButton}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('QrScannerModel')} // ✅ Chuyển đến QrScannerModel
-        >
-          <Icon name="qr-code-scanner" size={28} color="#20B24A" />
-        </TouchableOpacity>
+        {/* 🟩 Lời chào */}
+        <Text style={styles.subtitle}>Chào mừng bạn trở lại!</Text>
+        <Text style={styles.subnote}>
+          Chọn chức năng để bắt đầu công việc hôm nay
+        </Text>
+
+        {/* 🟩 Danh sách các nút chức năng */}
+        <View style={styles.buttonContainer}>
+          {buttons.map((btn, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuButton}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate(btn.screen)}
+            >
+              <View style={styles.iconWrapper}>
+                <Icon name={btn.icon} size={26} color="#20B24A" />
+              </View>
+              <Text style={styles.menuText}>{btn.title}</Text>
+              <Icon name="arrow-forward-ios" size={18} color="#888" />
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      {/* 🟩 Lời chào */}
-      <Text style={styles.subtitle}>Chào mừng bạn trở lại!</Text>
-      <Text style={styles.subnote}>
-        Chọn chức năng để bắt đầu công việc hôm nay
-      </Text>
-
-      {/* 🟩 Danh sách các nút chức năng */}
-      <View style={styles.buttonContainer}>
-        {buttons.map((btn, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.menuButton}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate(btn.screen)}
-          >
-            <View style={styles.iconWrapper}>
-              <Icon name={btn.icon} size={26} color="#20B24A" />
-            </View>
-            <Text style={styles.menuText}>{btn.title}</Text>
-            <Icon name="arrow-forward-ios" size={18} color="#888" />
-          </TouchableOpacity>
-        ))}
-      </View>
+      <PTBottomScanBar
+        onScanPress={() => navigation.navigate('QrScannerModel')}
+      />
     </View>
   );
 };
@@ -89,12 +96,14 @@ const HomePTScreen = ({ navigation }) => {
 export default HomePTScreen;
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#F8FAF9' },
   container: {
     flex: 1,
     backgroundColor: '#F8FAF9',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingBottom: 160,
   },
   headerRow: {
     flexDirection: 'row',
