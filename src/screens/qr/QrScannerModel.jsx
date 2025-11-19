@@ -1,88 +1,532 @@
-import React, { useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
-  SafeAreaView,
+  ActivityIndicator,
+  Linking,
+  PermissionsAndroid,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Vibration,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import CameraKitModule, { Camera, CameraType } from 'react-native-camera-kit';
+
+import { scanAttendance } from '@api/ptApi';
 
 const PALETTE = {
+  primary: '#30C451',
+  primaryDark: '#1FA04A',
+  accent: '#81F4A8',
   background: '#05130B',
   surface: 'rgba(6, 20, 12, 0.96)',
-  mutedSurface: 'rgba(9, 27, 17, 0.72)',
-  accent: '#81F4A8',
+  surfaceMuted: 'rgba(9, 27, 17, 0.72)',
+  surfaceElevated: 'rgba(11, 32, 21, 0.94)',
   textPrimary: '#F1FFF6',
   textSecondary: '#9BBEA9',
+  textMuted: '#6F8579',
+  textOnPrimary: '#FFFFFF',
   outline: 'rgba(129, 244, 168, 0.28)',
+  borderBright: 'rgba(129, 244, 168, 0.42)',
+  overlayScrim: 'rgba(5, 19, 11, 0.9)',
+  overlayDim: 'rgba(5, 19, 11, 0.64)',
+  danger: '#FD5D5D',
+  warning: '#FFA726',
+  error: '#FF5252',
+};
+
+const PERMISSION_STATUS = {
+  checking: 'checking',
+  granted: 'granted',
+  denied: 'denied',
+  blocked: 'blocked',
+};
+
+const SCAN_STATUS = {
+  idle: 'idle',
+  success: 'success',
+  expired: 'expired',
+  wrongClass: 'wrongClass',
+  invalid: 'invalid',
+  processing: 'processing',
+};
+
+const DEFAULT_HELPER_TEXT =
+  'Giữ thiết bị ổn định, đưa QR vào khung để quét mã.';
+
+const extractClassId = data =>
+  data?.classId ||
+  data?.class_id ||
+  data?.classID ||
+  data?.ClassId ||
+  data?.ClassID ||
+  null;
+
+const resolveErrorType = (message = '', code = '') => {
+  const normalized = message.toLowerCase();
+  const normalizedCode = (code || '').toLowerCase();
+
+  if (
+    normalized.includes('expired') ||
+    normalized.includes('hết hạn') ||
+    normalizedCode.includes('expired')
+  ) {
+    return SCAN_STATUS.expired;
+  }
+
+  if (
+    normalized.includes('not enrolled') ||
+    normalized.includes('không đăng ký') ||
+    normalized.includes('wrong class')
+  ) {
+    return SCAN_STATUS.wrongClass;
+  }
+
+  if (
+    normalized.includes('chưa đến giờ') ||
+    normalized.includes('quá giờ') ||
+    normalizedCode.includes('checkin_window_not_started') ||
+    normalizedCode.includes('checkin_window_closed')
+  ) {
+    return SCAN_STATUS.wrongClass;
+  }
+
+  return SCAN_STATUS.invalid;
+};
+
+const normalizeMessage = (status, message) => {
+  if (message) {
+    return message;
+  }
+
+  switch (status) {
+    case SCAN_STATUS.expired:
+      return 'Mã QR đã hết hạn';
+    case SCAN_STATUS.wrongClass:
+      return 'Quét sai lớp học - Vui lòng kiểm tra lại';
+    case SCAN_STATUS.invalid:
+    default:
+      return 'Quét QR lỗi';
+  }
 };
 
 const QrScannerModel = () => {
   const navigation = useNavigation();
-  const [isTorchEnabled, setIsTorchEnabled] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState(
+    PERMISSION_STATUS.checking,
+  );
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [scanStatus, setScanStatus] = useState(SCAN_STATUS.idle);
+  const [scanMessage, setScanMessage] = useState('');
+  const [cameraError, setCameraError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const resetTimerRef = useRef(null);
 
-  const toggleTorch = () => {
-    setIsTorchEnabled(prev => !prev);
+  const clearResetTimer = () => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
   };
+
+  const scheduleReset = () => {
+    clearResetTimer();
+    resetTimerRef.current = setTimeout(() => {
+      setScanStatus(SCAN_STATUS.idle);
+      setScanMessage('');
+      setIsProcessing(false);
+    }, 2500);
+  };
+
+  useEffect(() => () => clearResetTimer(), []);
+
+  const resetState = useCallback(() => {
+    setTorchEnabled(false);
+    setScanStatus(SCAN_STATUS.idle);
+    setScanMessage('');
+    setCameraError(null);
+    setIsProcessing(false);
+    clearResetTimer();
+  }, []);
+
+  const requestPermission = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
+        if (result === PermissionsAndroid.RESULTS.GRANTED) {
+          return PERMISSION_STATUS.granted;
+        }
+        if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          return PERMISSION_STATUS.blocked;
+        }
+        return PERMISSION_STATUS.denied;
+      } catch {
+        return PERMISSION_STATUS.denied;
+      }
+    }
+
+    try {
+      const granted =
+        await CameraKitModule?.requestDeviceCameraAuthorization?.();
+      return granted ? PERMISSION_STATUS.granted : PERMISSION_STATUS.blocked;
+    } catch {
+      return PERMISSION_STATUS.blocked;
+    }
+  }, []);
+
+  const ensurePermission = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
+        if (hasPermission) {
+          return PERMISSION_STATUS.granted;
+        }
+      } catch {
+        // ignore and request permission
+      }
+      return requestPermission();
+    }
+
+    try {
+      const granted =
+        await CameraKitModule?.checkDeviceCameraAuthorizationStatus?.();
+      if (granted) {
+        return PERMISSION_STATUS.granted;
+      }
+      return await requestPermission();
+    } catch {
+      return await requestPermission();
+    }
+  }, [requestPermission]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      setPermissionStatus(PERMISSION_STATUS.checking);
+      resetState();
+
+      ensurePermission().then(status => {
+        if (isActive) {
+          setPermissionStatus(status);
+        }
+      });
+
+      return () => {
+        isActive = false;
+        resetState();
+      };
+    }, [ensurePermission, resetState]),
+  );
+
+  const handleRetryPermission = useCallback(() => {
+    setPermissionStatus(PERMISSION_STATUS.checking);
+    requestPermission().then(status => {
+      setPermissionStatus(status);
+    });
+  }, [requestPermission]);
+
+  const handleOpenSettings = useCallback(() => {
+    Linking.openSettings().catch(() => undefined);
+  }, []);
+
+  const handleTorchToggle = useCallback(() => {
+    setTorchEnabled(prev => !prev);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleCameraError = useCallback(event => {
+    const message =
+      event?.nativeEvent?.errorMessage || 'Không thể khởi tạo camera';
+    setCameraError(message);
+  }, []);
+
+  const showResult = useCallback((status, message) => {
+    setScanStatus(status);
+    setScanMessage(message);
+
+    if (status === SCAN_STATUS.success) {
+      Vibration.vibrate([0, 100, 50, 100]);
+    } else {
+      Vibration.vibrate([0, 200, 100, 200]);
+    }
+
+    scheduleReset();
+  }, []);
+
+  const handleReadCode = useCallback(
+    async event => {
+      if (isProcessing) {
+        return;
+      }
+
+      const value = event?.nativeEvent?.codeStringValue?.trim();
+      if (!value) {
+        return;
+      }
+
+      setIsProcessing(true);
+      setScanStatus(SCAN_STATUS.processing);
+      Vibration.vibrate(80);
+
+      let qrData = null;
+      try {
+        qrData = JSON.parse(value);
+      } catch {
+        qrData = { raw: value };
+      }
+
+      const classId = extractClassId(qrData);
+      if (!classId) {
+        showResult(
+          SCAN_STATUS.invalid,
+          'Mã QR không hợp lệ - Thiếu thông tin lớp học',
+        );
+        return;
+      }
+
+      if (qrData?.expiresAt) {
+        try {
+          const expiryTime = new Date(qrData.expiresAt).getTime();
+          if (Number.isFinite(expiryTime) && Date.now() > expiryTime) {
+            showResult(SCAN_STATUS.expired, 'Mã QR đã hết hạn');
+            return;
+          }
+        } catch {
+          // ignore invalid expiry
+        }
+      }
+
+      try {
+        const response = await scanAttendance({
+          classId,
+          qrValue: value,
+        });
+
+        if (response?.success === false) {
+          const status = resolveErrorType(response?.message, response?.error);
+          const message = normalizeMessage(status, response?.message);
+          showResult(status, message);
+          return;
+        }
+
+        const message =
+          response?.message || 'Quét mã thành công! Học viên đã được điểm danh.';
+        showResult(SCAN_STATUS.success, message);
+      } catch (error) {
+        const status = resolveErrorType(error?.message, error?.code);
+        const message = normalizeMessage(status, error?.message);
+        showResult(status, message);
+      }
+    },
+    [isProcessing, showResult],
+  );
+
+  const permissionContent = (() => {
+    if (permissionStatus === PERMISSION_STATUS.checking) {
+      return (
+        <View style={styles.stateContainer}>
+          <ActivityIndicator size="large" color={PALETTE.primary} />
+          <Text style={styles.stateText}>
+            Đang kiểm tra quyền truy cập camera...
+          </Text>
+        </View>
+      );
+    }
+
+    if (permissionStatus === PERMISSION_STATUS.granted) {
+      return null;
+    }
+
+    if (permissionStatus === PERMISSION_STATUS.denied) {
+      return (
+        <View style={styles.permissionContainer}>
+          <Icon name="no-photography" size={56} color={PALETTE.primary} />
+          <Text style={styles.permissionTitle}>
+            Chưa có quyền sử dụng camera
+          </Text>
+          <Text style={styles.permissionDescription}>
+            Vui lòng cho phép GymXFit PT truy cập camera để quét mã QR.
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={handleRetryPermission}
+          >
+            <Text style={styles.permissionButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.permissionGhostButton}
+            onPress={handleBack}
+          >
+            <Text style={styles.permissionGhostButtonText}>Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.permissionContainer}>
+        <Icon name="security" size={56} color={PALETTE.primary} />
+        <Text style={styles.permissionTitle}>
+          Camera đã bị chặn quyền truy cập
+        </Text>
+        <Text style={styles.permissionDescription}>
+          Hãy mở phần Cài đặt và cấp quyền camera cho GymXFit PT để tiếp tục
+          quét mã QR.
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={handleOpenSettings}
+        >
+          <Text style={styles.permissionButtonText}>Mở cài đặt</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.permissionGhostButton}
+          onPress={handleBack}
+        >
+          <Text style={styles.permissionGhostButtonText}>Đóng</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  })();
+
+  const overlayContent = (
+    <>
+      <View pointerEvents="none" style={styles.overlay}>
+        <View style={styles.overlayDim} />
+        <View style={styles.overlayRow}>
+          <View style={styles.overlayDim} />
+          <View style={styles.scanFrame}>
+            <View style={[styles.frameCorner, styles.topLeft]} />
+            <View style={[styles.frameCorner, styles.topRight]} />
+            <View style={[styles.frameCorner, styles.bottomLeft]} />
+            <View style={[styles.frameCorner, styles.bottomRight]} />
+            {scanStatus === SCAN_STATUS.processing && (
+              <View style={styles.scanningIndicator}>
+                <ActivityIndicator size="large" color={PALETTE.primary} />
+              </View>
+            )}
+          </View>
+          <View style={styles.overlayDim} />
+        </View>
+        <View style={[styles.overlayDim, styles.overlayBottom]}>
+          <Text style={styles.bottomInstruction}>{DEFAULT_HELPER_TEXT}</Text>
+        </View>
+      </View>
+
+      {(scanStatus === SCAN_STATUS.success ||
+        scanStatus === SCAN_STATUS.expired ||
+        scanStatus === SCAN_STATUS.wrongClass ||
+        scanStatus === SCAN_STATUS.invalid) && (
+        <View
+          style={[
+            styles.toastNotification,
+            scanStatus === SCAN_STATUS.success && styles.toastSuccess,
+            scanStatus === SCAN_STATUS.expired && styles.toastWarning,
+            scanStatus === SCAN_STATUS.wrongClass && styles.toastError,
+            scanStatus === SCAN_STATUS.invalid && styles.toastDanger,
+          ]}
+        >
+          <Icon
+            name={
+              scanStatus === SCAN_STATUS.success
+                ? 'check-circle'
+                : scanStatus === SCAN_STATUS.expired
+                ? 'access-time'
+                : scanStatus === SCAN_STATUS.wrongClass
+                ? 'error-outline'
+                : 'highlight-off'
+            }
+            size={24}
+            color={PALETTE.textOnPrimary}
+          />
+          <Text style={styles.toastText}>{scanMessage}</Text>
+        </View>
+      )}
+
+      <View style={styles.actionsBar}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={handleTorchToggle}
+        >
+          <Icon
+            name={torchEnabled ? 'flashlight-on' : 'flashlight-off'}
+            size={26}
+            color={PALETTE.textPrimary}
+          />
+          <Text style={[styles.actionLabel, styles.actionLabelSpacing]}>
+            {torchEnabled ? 'Tắt đèn' : 'Bật đèn'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {cameraError ? (
+        <View style={styles.errorBanner}>
+          <Icon name="error-outline" size={20} color={PALETTE.textOnPrimary} />
+          <Text style={styles.errorText}>{cameraError}</Text>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const cameraContent =
+    permissionStatus === PERMISSION_STATUS.granted ? (
+      <View style={styles.cameraWrapper}>
+        <Suspense
+          fallback={
+            <View style={styles.pendingOverlay}>
+              <ActivityIndicator size="large" color={PALETTE.primary} />
+              <Text style={styles.pendingText}>Đang kích hoạt camera...</Text>
+            </View>
+          }
+        >
+          <Camera
+            style={styles.cameraPreview}
+            cameraType={CameraType.Back}
+            scanBarcode
+            flashMode={torchEnabled ? 'on' : 'off'}
+            torchMode={torchEnabled ? 'on' : 'off'}
+            onReadCode={handleReadCode}
+            onError={handleCameraError}
+            showFrame={false}
+            scanThrottleDelay={1500}
+          />
+        </Suspense>
+        {overlayContent}
+      </View>
+    ) : (
+      permissionContent
+    );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" />
 
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={toggleTorch}
-          activeOpacity={0.85}
-        >
-          <Icon
-            name={isTorchEnabled ? 'white-balance-sunny' : 'weather-night'}
-            size={24}
-            color={PALETTE.textPrimary}
-          />
+        <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
+          <Icon name="arrow-back" size={24} color={PALETTE.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quét mã QR</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.85}
-        >
-          <Icon name="close" size={24} color={PALETTE.textPrimary} />
-        </TouchableOpacity>
+        <View style={styles.headerPlaceholder} />
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.cameraPlaceholder}>
-          <View style={styles.scanFrame}>
-            <View style={[styles.frameCorner, styles.topLeft]} />
-            <View style={[styles.frameCorner, styles.topRight]} />
-            <View style={[styles.frameCorner, styles.bottomLeft]} />
-            <View style={[styles.frameCorner, styles.bottomRight]} />
-          </View>
-        </View>
-
-        <Text style={styles.helperText}>
-          Giữ thiết bị ổn định, đưa QR vào khung để quét mã.
-        </Text>
-      </View>
-
-      <View style={styles.actionsBar}>
-        <TouchableOpacity
-          style={styles.primaryActionButton}
-          onPress={toggleTorch}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.actionEmoji}>
-            {isTorchEnabled ? '🌙' : '💡'}
-          </Text>
-          <Text style={styles.actionButtonText}>
-            {isTorchEnabled ? 'Tắt đèn' : 'Bật đèn'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <View style={styles.body}>{cameraContent}</View>
     </SafeAreaView>
   );
 };
@@ -98,9 +542,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: PALETTE.surface,
+    backgroundColor: 'rgba(5, 19, 11, 0.96)',
     borderBottomColor: PALETTE.outline,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   headerButton: {
     width: 40,
@@ -108,7 +557,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: PALETTE.mutedSurface,
+    backgroundColor: PALETTE.surfaceMuted,
     borderWidth: 1,
     borderColor: PALETTE.outline,
   },
@@ -117,87 +566,251 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: PALETTE.textPrimary,
   },
+  headerPlaceholder: {
+    width: 40,
+  },
   body: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    gap: 24,
+    alignSelf: 'stretch',
+    backgroundColor: 'transparent',
   },
-  cameraPlaceholder: {
-    width: 260,
-    height: 260,
-    borderRadius: 24,
-    borderColor: 'rgba(129, 244, 168, 0.42)',
-    borderWidth: 1.5,
-    backgroundColor: 'rgba(3, 18, 10, 0.32)',
-    alignItems: 'center',
+  cameraWrapper: {
+    flex: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#000',
+  },
+  cameraPreview: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    position: 'relative',
+  },
+  overlayDim: {
+    flex: 1,
+    backgroundColor: PALETTE.overlayDim,
+  },
+  overlayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 260,
   },
   scanFrame: {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
+    width: 260,
+    height: 260,
+    borderRadius: 20,
+    borderColor: PALETTE.borderBright,
+    borderWidth: 1.5,
+    backgroundColor: 'rgba(3, 18, 10, 0.32)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanningIndicator: {
+    position: 'absolute',
   },
   frameCorner: {
     position: 'absolute',
     width: 44,
     height: 44,
-    borderColor: PALETTE.accent,
+    borderColor: PALETTE.primary,
+    borderWidth: 4,
+    shadowColor: PALETTE.primary,
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
+    top: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
   },
   topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
+    top: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
   },
   bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
+    bottom: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
   },
   bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
+    bottom: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
   },
-  helperText: {
-    color: PALETTE.textSecondary,
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  actionsBar: {
-    paddingBottom: 36,
+  overlayBottom: {
+    paddingTop: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryActionButton: {
-    backgroundColor: '#092612',
-    borderRadius: 22,
-    paddingHorizontal: 36,
-    paddingVertical: 14,
+  bottomInstruction: {
+    color: PALETTE.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  actionsBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(5, 19, 11, 0.95)',
+    borderTopColor: PALETTE.outline,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  controlButton: {
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  actionLabel: {
+    color: PALETTE.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionLabelSpacing: {
+    marginTop: 6,
+  },
+  permissionContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: PALETTE.background,
+  },
+  permissionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: PALETTE.textPrimary,
+    marginTop: 18,
+    textAlign: 'center',
+  },
+  permissionDescription: {
+    color: PALETTE.textSecondary,
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 22,
+  },
+  permissionButton: {
+    backgroundColor: PALETTE.primary,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 20,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  permissionButtonText: {
+    color: PALETTE.textOnPrimary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  permissionGhostButton: {
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: PALETTE.outline,
+    marginTop: 12,
+    backgroundColor: 'transparent',
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  permissionGhostButtonText: {
+    color: PALETTE.textPrimary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  stateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: PALETTE.background,
+  },
+  stateText: {
+    color: PALETTE.textSecondary,
+    fontSize: 15,
+    marginTop: 16,
+  },
+  pendingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: PALETTE.overlayScrim,
+  },
+  pendingText: {
+    color: PALETTE.textPrimary,
+    fontSize: 15,
+    marginTop: 16,
+  },
+  errorBanner: {
+    position: 'absolute',
+    top: 24,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderWidth: 1.2,
-    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: PALETTE.danger,
+    borderRadius: 14,
   },
-  actionEmoji: {
-    fontSize: 20,
+  errorText: {
+    color: PALETTE.textOnPrimary,
+    fontSize: 14,
+    marginLeft: 10,
+    flex: 1,
   },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+  toastNotification: {
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    gap: 12,
+  },
+  toastSuccess: {
+    backgroundColor: PALETTE.primary,
+  },
+  toastWarning: {
+    backgroundColor: PALETTE.warning,
+  },
+  toastError: {
+    backgroundColor: PALETTE.error,
+  },
+  toastDanger: {
+    backgroundColor: PALETTE.danger,
+  },
+  toastText: {
+    color: PALETTE.textOnPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 20,
   },
 });
 

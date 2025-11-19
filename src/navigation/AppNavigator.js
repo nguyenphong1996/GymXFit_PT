@@ -64,9 +64,7 @@ const AppNavigator = () => {
               component={QrScannerModel}
               options={{
                 presentation: 'modal',
-                headerShown: true,
-                title: 'Quét mã QR',
-                headerBackTitleVisible: false,
+                headerShown: false,
               }}
             />
 

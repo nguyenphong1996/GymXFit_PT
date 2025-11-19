@@ -1,7 +1,12 @@
 // 📁 src/context/PTContext.js
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getProfile } from '@api/ptApi';
+import {
+  clearStoredToken,
+  isTokenExpired,
+  persistToken,
+  readStoredToken,
+} from '../utils/tokenStorage';
 
 export const PTContext = createContext({});
 
@@ -35,15 +40,9 @@ export const PTProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [tokenExpiry, setTokenExpiry] = useState(null);
 
-  const fetchProfile = useCallback(async (overrideToken = null) => {
-    const activeToken =
-      overrideToken ?? (await AsyncStorage.getItem('token'));
-    if (!activeToken) {
-      setPtInfo(null);
-      return null;
-    }
-
+  const fetchProfile = useCallback(async () => {
     setLoadingProfile(true);
     try {
       const response = await getProfile();
@@ -55,6 +54,11 @@ export const PTProvider = ({ children }) => {
       return profile;
     } catch (error) {
       console.warn('Fetch PT profile failed:', error.message);
+      if (error?.status === 401 || error?.status === 403) {
+        await clearStoredToken();
+        setUserToken(null);
+        setTokenExpiry(null);
+      }
       setPtInfo(null);
       throw error;
     } finally {
@@ -66,16 +70,33 @@ export const PTProvider = ({ children }) => {
     const restoreSession = async () => {
       setIsLoading(true);
       try {
-        const storedToken = await AsyncStorage.getItem('token');
-        if (storedToken) {
-          setUserToken(storedToken);
-          await fetchProfile(storedToken);
+        const { token: storedToken, expiresAt } = await readStoredToken();
+        if (!storedToken) {
+          setUserToken(null);
+          setPtInfo(null);
+          setTokenExpiry(null);
+          return;
         }
+
+        if (isTokenExpired(expiresAt)) {
+          await clearStoredToken();
+          setUserToken(null);
+          setPtInfo(null);
+          setTokenExpiry(null);
+          return;
+        }
+
+        setUserToken(storedToken);
+        setTokenExpiry(expiresAt ?? null);
+        await fetchProfile();
       } catch (error) {
         console.warn('Restore PT session failed:', error.message);
-        await AsyncStorage.removeItem('token');
-        setUserToken(null);
-        setPtInfo(null);
+        if (error?.status === 401 || error?.status === 403) {
+          await clearStoredToken();
+          setUserToken(null);
+          setPtInfo(null);
+          setTokenExpiry(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -85,24 +106,26 @@ export const PTProvider = ({ children }) => {
   }, [fetchProfile]);
 
   const login = useCallback(
-    async (tokenValue, user) => {
+    async (tokenValue, user, metadata = null) => {
       if (!tokenValue) {
         throw new Error('Thiếu token đăng nhập');
       }
 
       setIsLoading(true);
       try {
-        await AsyncStorage.setItem('token', tokenValue);
-        setUserToken(tokenValue);
+        const stored = await persistToken(tokenValue, metadata);
+        setUserToken(stored.token);
+        setTokenExpiry(stored.expiresAt ?? null);
         const profile = extractProfilePayload(user);
         if (isValidPtAccount(profile)) {
           setPtInfo(profile);
         } else {
-          await fetchProfile(tokenValue);
+          await fetchProfile();
         }
       } catch (error) {
-        await AsyncStorage.removeItem('token');
+        await clearStoredToken();
         setUserToken(null);
+        setTokenExpiry(null);
         setPtInfo(null);
         throw error;
       } finally {
@@ -115,15 +138,33 @@ export const PTProvider = ({ children }) => {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
-      await AsyncStorage.removeItem('token');
+      await clearStoredToken();
     } catch (error) {
       console.warn('Failed to clear PT token:', error.message);
     } finally {
       setUserToken(null);
+      setTokenExpiry(null);
       setPtInfo(null);
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!userToken || !tokenExpiry) {
+      return undefined;
+    }
+
+    if (isTokenExpired(tokenExpiry)) {
+      logout();
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => {
+      logout();
+    }, Math.max(tokenExpiry - Date.now(), 0));
+
+    return () => clearTimeout(timeout);
+  }, [userToken, tokenExpiry, logout]);
 
   return (
     <PTContext.Provider
@@ -131,6 +172,7 @@ export const PTProvider = ({ children }) => {
         ptInfo,
         userToken,
         isLoading,
+        tokenExpiry,
         login,
         logout,
         fetchProfile,
