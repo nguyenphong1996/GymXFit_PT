@@ -58,7 +58,11 @@ const VerifyLoginScreen = ({ navigation }) => {
     setIsVerifying(true);
     try {
       const response = await verifyLoginOtp(phone, otp, purpose);
-      const token = response?.token;
+      const token =
+        response?.token?.accessToken ||
+        response?.token?.token ||
+        response?.token ||
+        response?.data?.token;
       const user = response?.user || response?.staff;
       const normalizedRole =
         typeof user?.role === 'string' ? user.role.toLowerCase() : null;
@@ -72,7 +76,7 @@ const VerifyLoginScreen = ({ navigation }) => {
         throw new Error('Không tìm thấy PT hoặc tài khoản không hợp lệ.');
       }
 
-      await login(token, user);
+      await login(token, user, response);
       showToast({
         type: 'success',
         title: 'Đăng nhập thành công',

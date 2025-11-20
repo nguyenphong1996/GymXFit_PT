@@ -59,11 +59,99 @@ export async function verifyLoginOtp(
 // 👤 Lấy thông tin hồ sơ PT
 export async function getProfile() {
   try {
-    const response = await createAxiosInstance().get('/api/pt/profile');
+    const response = await createAxiosInstance().get('/api/staff/profile');
     return response;
   } catch (error) {
+    const status = error.response?.status;
     const errorMessage =
-      error.response?.data?.message || 'Không thể tải thông tin PT.';
-    throw new Error(errorMessage);
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể tải thông tin PT.';
+    const customError = new Error(errorMessage);
+    if (status) {
+      customError.status = status;
+    }
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    throw customError;
+  }
+}
+
+const serializeQrValue = value => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
+const normalizeScanError = error => {
+  const data = error.response?.data;
+  const status = error.response?.status;
+  const message =
+    data?.message ||
+    data?.error ||
+    (status === 404
+      ? 'Không tìm thấy lớp học tương ứng với mã QR.'
+      : error.message) ||
+    'Không thể điểm danh bằng QR.';
+
+  const customError = new Error(message);
+  if (data?.error) {
+    customError.code = data.error;
+  }
+  if (status) {
+    customError.status = status;
+  }
+  return customError;
+};
+
+export async function scanAttendance({ classId, qrValue }) {
+  if (!classId) {
+    throw new Error('Thiếu mã lớp học trong QR.');
+  }
+  if (!qrValue) {
+    throw new Error('Không đọc được dữ liệu QR.');
+  }
+
+  const payload = {
+    qrValue: serializeQrValue(qrValue),
+  };
+
+  const axiosInstance = createAxiosInstance();
+
+  try {
+    const response = await axiosInstance.post(
+      `/api/staff/classes/${classId}/attendance/scan`,
+      payload,
+    );
+    return response;
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      try {
+        const fallbackResponse = await axiosInstance.post(
+          '/api/staff/classes/attendance/scan',
+          {
+            ...payload,
+            classId,
+          },
+        );
+        return fallbackResponse;
+      } catch (fallbackError) {
+        throw normalizeScanError(fallbackError);
+      }
+    }
+
+    throw normalizeScanError(error);
   }
 }

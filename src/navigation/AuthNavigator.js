@@ -12,7 +12,9 @@ import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
 import QrScannerModel from '@screens/qr/QrScannerModel';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
-import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen'
+import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen';
+import PTRecentCustomerScreen from '@screens/customers/PTRecentCustomerScreen';
+
 
 
 
@@ -51,6 +53,7 @@ const AuthNavigator = () => (
       name="PTCustomerDetailScreen"
       component={PTCustomerDetailScreen}
     />
+    <Stack.Screen name="PTRecentCustomerScreen" component={PTRecentCustomerScreen}/>
   </Stack.Navigator>
 );
 
