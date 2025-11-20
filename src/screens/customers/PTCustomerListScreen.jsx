@@ -13,41 +13,60 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 const PTCustomerListScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
 
+  // 🔥 DANH SÁCH KHÁCH ĐANG BOOK
   const customers = [
     {
       id: 1,
       name: 'Nguyễn Văn A',
       phone: '0901234567',
-      age: 28,
-      weight: 70,
-      height: 175,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+      endTime: '2025-11-20T19:00:00',
     },
     {
       id: 2,
       name: 'Trần Thị B',
       phone: '0934567890',
-      age: 25,
-      weight: 55,
-      height: 165,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+      endTime: '2025-11-20T21:00:00',
     },
     {
       id: 3,
       name: 'Lê Văn C',
       phone: '0912345678',
-      age: 30,
-      weight: 80,
-      height: 180,
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+      endTime: '2025-11-20T17:30:00',
     },
   ];
 
-  const filtered = customers.filter(
+  const now = new Date();
+
+  // 🔥 Lọc khách chưa hết hạn
+  const activeCustomers = customers.filter(
+    item => new Date(item.endTime) > now,
+  );
+
+  // 🔥 Tìm kiếm
+  const filtered = activeCustomers.filter(
     c =>
       c.name.toLowerCase().includes(searchText.toLowerCase()) ||
       c.phone.includes(searchText),
   );
+
+  // Format ngày + giờ
+  const formatFullDateTime = dateString => {
+    const date = new Date(dateString);
+    return (
+      date.getDate().toString().padStart(2, '0') +
+      '/' +
+      (date.getMonth() + 1).toString().padStart(2, '0') +
+      '/' +
+      date.getFullYear() +
+      ' - ' +
+      date.getHours().toString().padStart(2, '0') +
+      ':' +
+      date.getMinutes().toString().padStart(2, '0')
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -56,7 +75,7 @@ const PTCustomerListScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Danh sách khách hàng</Text>
+        <Text style={styles.headerTitle}>Danh sách khách đang book PT</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -71,8 +90,17 @@ const PTCustomerListScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* 🔹 Danh sách */}
-      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+      {/* 🔥 NÚT “KHÁCH HÀNG GẦN ĐÂY” (đã đổi sang xanh lá) */}
+      <TouchableOpacity
+        style={styles.recentBtn}
+        onPress={() => navigation.navigate('PTRecentCustomerScreen')}
+      >
+        <Icon name="history" size={22} color="#fff" />
+        <Text style={styles.recentText}>Khách hàng gần đây</Text>
+      </TouchableOpacity>
+
+      {/* 🔹 Danh sách khách */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {filtered.map(c => (
           <View key={c.id} style={styles.card}>
             <View style={styles.row}>
@@ -80,6 +108,9 @@ const PTCustomerListScreen = ({ navigation }) => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{c.name}</Text>
                 <Text style={styles.phone}>{c.phone}</Text>
+                <Text style={styles.timeText}>
+                  Hết hạn: {formatFullDateTime(c.endTime)}
+                </Text>
               </View>
             </View>
 
@@ -101,6 +132,7 @@ const PTCustomerListScreen = ({ navigation }) => {
               >
                 <Text style={styles.btnText}>Soạn giáo án</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: '#1E88E5' }]}
                 onPress={() =>
@@ -121,6 +153,7 @@ export default PTCustomerListScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
   header: {
     backgroundColor: '#20B24A',
     flexDirection: 'row',
@@ -129,6 +162,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -139,6 +173,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   input: { flex: 1, height: 40, marginLeft: 6 },
+
+  // 🔥 NÚT KHÁCH GẦN ĐÂY → ĐÃ ĐỔI MÀU XANH LÁ
+  recentBtn: {
+    backgroundColor: '#20B24A',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recentText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
@@ -150,8 +203,11 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
-  name: { fontSize: 16, fontWeight: '700', color: '#000' },
+
+  name: { fontSize: 16, fontWeight: '700' },
   phone: { color: '#555' },
+  timeText: { color: '#888', fontSize: 12, marginTop: 2 },
+
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between' },
   btn: {
     flex: 1,

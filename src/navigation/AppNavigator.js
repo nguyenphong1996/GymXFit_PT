@@ -13,7 +13,8 @@ import HomeNavigator from '@navigation/HomeNavigator';
 import QrScannerModel from '@screens/qr/QrScannerModel';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
-import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen'; // 🔹 Thêm chi tiết KH nếu có
+import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen';
+// 🔹 Thêm chi tiết KH nếu có
 
 const Stack = createNativeStackNavigator();
 
