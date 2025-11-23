@@ -1,6 +1,5 @@
 // PTFreeScheduleScreen.js
 // Material Design 3 calendar — Full screen component with Year Picker modal
-// Reference screenshot (for visual parity): /mnt/data/65241b0b-3600-4a9c-a01d-790747fe36b8.png
 
 import React, {
   useState,
@@ -115,29 +114,23 @@ const PTFreeScheduleScreen = ({ navigation }) => {
 
   const flatListRef = useRef(null);
 
-  // mode determines whether the "Month label" shows month or week label
-  const [mode, setMode] = useState('week'); // 'week' or 'month'
+  const [mode, setMode] = useState('week');
 
-  // currentMonth is first day of month being viewed
   const [currentMonth, setCurrentMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
-  // selectedDate is full Date object for currently selected day
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   });
 
-  // index of selected date inside daysForMonth
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
 
-  // modal for year picker
   const [yearModalVisible, setYearModalVisible] = useState(false);
 
-  // slots & selections
   const [selectedSlots, setSelectedSlots] = useState({});
   const [refreshing, setRefreshing] = useState(false);
 
@@ -148,13 +141,10 @@ const PTFreeScheduleScreen = ({ navigation }) => {
     { label: 'Ca 4 (17:00 - 21:00)', key: 'Ca 4' },
   ];
 
-  // helper: number of days in a month
   const daysInMonthCount = useCallback((year, month) => {
-    // month: 0-11
     return new Date(year, month + 1, 0).getDate();
   }, []);
 
-  // build days for currentMonth (array of day objects)
   const daysForMonth = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -175,13 +165,10 @@ const PTFreeScheduleScreen = ({ navigation }) => {
     return arr;
   }, [currentMonth, daysInMonthCount]);
 
-  // when daysForMonth or selectedDate changes, update index and scroll
   useEffect(() => {
-    // find index of selectedDate in daysForMonth
     const idx = daysForMonth.findIndex(d => isSameDay(d.dateObj, selectedDate));
     if (idx >= 0) {
       setSelectedDateIndex(idx);
-      // scroll to index
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
           index: idx,
@@ -192,7 +179,6 @@ const PTFreeScheduleScreen = ({ navigation }) => {
       return;
     }
 
-    // if selectedDate not in this month, keep same day number
     const dayNum = selectedDate.getDate();
     const clamped = Math.min(Math.max(1, dayNum), daysForMonth.length);
     const newDate = new Date(
@@ -211,10 +197,8 @@ const PTFreeScheduleScreen = ({ navigation }) => {
         viewPosition: 0.5,
       });
     }, 50);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daysForMonth]);
 
-  // Helper to toggle slot for selected date
   const toggleSlot = useCallback((dateKey, slotKey) => {
     setSelectedSlots(prev => {
       const current = prev[dateKey] || [];
@@ -234,20 +218,16 @@ const PTFreeScheduleScreen = ({ navigation }) => {
     }
     Alert.alert(
       'Đã lưu lịch rảnh',
-      `Ngày ${key}
-Các ca rảnh: ${chosen.join(', ')}
-Thông tin đã gửi đến Admin.`,
+      `Ngày ${key}\nCác ca rảnh: ${chosen.join(', ')}\nThông tin đã gửi đến Admin.`,
     );
   }, [selectedDate, selectedSlots]);
 
-  // month navigation: previous/next month (handles year rollover)
   const goToPreviousMonth = useCallback(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const newMonthDate = new Date(year, month - 1, 1);
     setCurrentMonth(newMonthDate);
 
-    // try to keep same day number
     const desiredDay = selectedDate.getDate();
     const maxDays = daysInMonthCount(
       newMonthDate.getFullYear(),
@@ -269,7 +249,6 @@ Thông tin đã gửi đến Admin.`,
     const newMonthDate = new Date(year, month + 1, 1);
     setCurrentMonth(newMonthDate);
 
-    // try to keep same day number
     const desiredDay = selectedDate.getDate();
     const maxDays = daysInMonthCount(
       newMonthDate.getFullYear(),
@@ -291,11 +270,9 @@ Thông tin đã gửi đến Admin.`,
     setSelectedDate(today);
   }, []);
 
-  // Press a day pill
   const handlePressDay = useCallback(dayItem => {
     setSelectedDate(dayItem.dateObj);
     setSelectedDateIndex(dayItem.index);
-    // ensure center
     flatListRef.current?.scrollToIndex({
       index: dayItem.index,
       animated: true,
@@ -303,7 +280,6 @@ Thông tin đã gửi đến Admin.`,
     });
   }, []);
 
-  // Renderers
   const renderDay = useCallback(
     ({ item }) => (
       <DayItem
@@ -316,36 +292,25 @@ Thông tin đã gửi đến Admin.`,
     [selectedDateIndex, handlePressDay],
   );
 
-  // Derived values for header label
-  const currentMonthLabel = `${
-    currentMonth.getMonth() + 1
-  }/${currentMonth.getFullYear()}`;
+  const currentMonthLabel = `${currentMonth.getMonth() + 1}/${currentMonth.getFullYear()}`;
 
-  // dateKey for selectedDate
   const dateKey = formatDateKey(selectedDate);
   const selectedForDay = selectedSlots[dateKey] || [];
 
-  // handle refresh (kept simple)
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 700); // simulate refresh
+    setTimeout(() => setRefreshing(false), 700);
   }, []);
 
-  // Year modal constants
-  const ROW_HEIGHT = 56; // each year row height
-  const VISIBLE_ROWS = 7; // visible rows in modal (approx.)
+  const ROW_HEIGHT = 56;
+  const VISIBLE_ROWS = 7;
 
-  // Year list will be lazy-loaded (append more years when reaching end)
-  // initial start=2015, initialEnd = currentYear + 5
   const initialStartYear = 2015;
   const initialEndYear =
     Math.max(new Date().getFullYear(), initialStartYear) + 5;
 
-  // We'll keep the years in state inside YearPickerList (see component below)
-
   const onSelectYear = useCallback(
     year => {
-      // Keep same month; clamp day
       const month = currentMonth.getMonth();
       const desiredDay = selectedDate.getDate();
       const maxDays = daysInMonthCount(year, month);
@@ -360,7 +325,6 @@ Thông tin đã gửi đến Admin.`,
     [currentMonth, selectedDate, daysInMonthCount],
   );
 
-  // when layout or data changes, ensure FlatList has valid initial scroll
   const onDaysLayout = useCallback(() => {
     setTimeout(() => {
       if (selectedDateIndex >= 0 && selectedDateIndex < daysForMonth.length) {
@@ -377,11 +341,12 @@ Thông tin đã gửi đến Admin.`,
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+
+        {/* ❌ Xóa icon back */}
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.headerIcon}
         >
-          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
         </TouchableOpacity>
 
         <View style={styles.headerTextWrap}>
@@ -389,16 +354,15 @@ Thông tin đã gửi đến Admin.`,
           <Text style={styles.headerSub}>Chọn ngày & ca rảnh</Text>
         </View>
 
+        {/* ❌ Xóa icon today */}
         <View style={{ width: 40 }}>
           <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-            <Icon name="today" size={20} color={COLORS.onPrimary} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Calendar area */}
       <View style={styles.calendarSection}>
-        {/* month navigation */}
         <View style={styles.calendarHeader}>
           <TouchableOpacity
             style={styles.calendarNavButton}
@@ -413,11 +377,9 @@ Thông tin đã gửi đến Admin.`,
             activeOpacity={0.8}
           >
             <Text style={styles.monthYearText}>
-              {`${
-                fullDayNames[selectedDate.getDay()]
-              }, ${selectedDate.getDate()}/${
-                selectedDate.getMonth() + 1
-              }/${selectedDate.getFullYear()}`}
+              {`${fullDayNames[selectedDate.getDay()]}, ${
+                selectedDate.getDate()
+              }/${selectedDate.getMonth() + 1}/${selectedDate.getFullYear()}`}
             </Text>
             <Icon
               name="event"
@@ -435,7 +397,6 @@ Thông tin đã gửi đến Admin.`,
           </TouchableOpacity>
         </View>
 
-        {/* Horizontal days for current month only */}
         <FlatList
           ref={flatListRef}
           horizontal
@@ -451,7 +412,6 @@ Thông tin đã gửi đến Admin.`,
             index,
           })}
           onScrollToIndexFailed={info => {
-            // fallback when scrollToIndex fails
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({
                 index: Math.min(info.index, daysForMonth.length - 1),
@@ -467,7 +427,6 @@ Thông tin đã gửi đến Admin.`,
         />
       </View>
 
-      {/* Body: slots and actions */}
       <ScrollView
         style={styles.body}
         contentContainerStyle={{ paddingBottom: 80 }}
@@ -485,7 +444,9 @@ Thông tin đã gửi đến Admin.`,
             {fullDayNames[selectedDate.getDay()]}, {selectedDate.getDate()}/
             {selectedDate.getMonth() + 1}/{selectedDate.getFullYear()}
           </Text>
-          <Text style={styles.daySummarySubtitle}>Chọn ca rảnh trong ngày</Text>
+          <Text style={styles.daySummarySubtitle}>
+            Chọn ca rảnh trong ngày
+          </Text>
         </View>
 
         <View style={styles.slotSection}>
@@ -525,7 +486,6 @@ Thông tin đã gửi đến Admin.`,
         </View>
       </ScrollView>
 
-      {/* Year picker modal (centered dialog) */}
       <Modal
         visible={yearModalVisible}
         animationType="fade"
@@ -543,7 +503,6 @@ Thông tin đã gửi đến Admin.`,
             ]}
             onPress={() => {}}
           >
-            {/* Header */}
             <View style={modalStyles.header}>
               <Text style={modalStyles.title}>Chọn năm</Text>
               <TouchableOpacity
@@ -555,7 +514,6 @@ Thông tin đã gửi đến Admin.`,
               </TouchableOpacity>
             </View>
 
-            {/* Year list (infinite / lazy load) */}
             <YearPickerList
               startYear={initialStartYear}
               initialEndYear={initialEndYear}
@@ -573,40 +531,56 @@ Thông tin đã gửi đến Admin.`,
 
 export default PTFreeScheduleScreen;
 
-/* Styles (kept close to your original) */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 44,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: Platform.OS === 'android' ? 16 : 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  headerIcon: { width: 40, alignItems: 'flex-start' },
-  headerTextWrap: { flex: 1, alignItems: 'center' },
-  greeting: { color: COLORS.onPrimary, fontWeight: '800', fontSize: 18 },
+
+  headerIcon: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+
+  headerTextWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
+    letterSpacing: 0.5,
+  },
+
   headerSub: {
+    marginTop: 6,
+    fontSize: 14,
     color: COLORS.primaryContainer || '#C2F0D4',
-    fontSize: 12,
-    marginTop: 4,
+    fontWeight: '500',
   },
+
   todayBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.95,
   },
 
   calendarSection: {
@@ -768,15 +742,6 @@ const modalStyles = StyleSheet.create({
   yearTextSelected: { color: COLORS.primary, fontWeight: '800' },
 });
 
-/* ---------------------------
-   YearPickerList component
-   - startYear: number (e.g. 2015)
-   - initialEndYear: number (e.g. currentYear + 5)
-   - rowHeight: number
-   - visibleRows: number
-   - selectedYear: number
-   - onSelectYear(year)
-   --------------------------- */
 const YearPickerList = ({
   startYear = 2015,
   initialEndYear = new Date().getFullYear() + 5,
@@ -785,7 +750,6 @@ const YearPickerList = ({
   selectedYear,
   onSelectYear,
 }) => {
-  // keep years in local state so we can append more when reaching end
   const [years, setYears] = useState(() => {
     const arr = [];
     for (let y = startYear; y <= initialEndYear; y++) arr.push(y);
@@ -795,12 +759,10 @@ const YearPickerList = ({
   const listRef = useRef(null);
   const [isAppending, setIsAppending] = useState(false);
 
-  // When the modal opens, scroll to the selected year (if present)
   useEffect(() => {
     if (!listRef.current) return;
     const idx = years.findIndex(y => y === selectedYear);
     if (idx >= 0) {
-      // center the selected item
       setTimeout(() => {
         listRef.current?.scrollToIndex({
           index: idx,
@@ -808,49 +770,12 @@ const YearPickerList = ({
           viewPosition: 0.5,
         });
       }, 40);
-    } else {
-      // if selected year not in current list, expand until it is
-      if (selectedYear < years[0]) {
-        // prepend years (rare for your use-case)
-        const newStart = Math.max(startYear, selectedYear - 10);
-        const prepend = [];
-        for (let y = newStart; y < years[0]; y++) prepend.push(y);
-        setYears(prev => [...prepend, ...prev]);
-        setTimeout(() => {
-          const newIdx = years.findIndex(y => y === selectedYear);
-          if (newIdx >= 0) {
-            listRef.current?.scrollToIndex({
-              index: newIdx,
-              animated: false,
-              viewPosition: 0.5,
-            });
-          }
-        }, 60);
-      } else if (selectedYear > years[years.length - 1]) {
-        // append until selectedYear in list
-        const to = selectedYear + 5;
-        const append = [];
-        for (let y = years[years.length - 1] + 1; y <= to; y++) append.push(y);
-        setYears(prev => [...prev, ...append]);
-        setTimeout(() => {
-          const newIdx = years.findIndex(y => y === selectedYear);
-          if (newIdx >= 0) {
-            listRef.current?.scrollToIndex({
-              index: newIdx,
-              animated: false,
-              viewPosition: 0.5,
-            });
-          }
-        }, 80);
-      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear]);
 
   const appendMore = useCallback(() => {
     if (isAppending) return;
     setIsAppending(true);
-    // append next 10 years
     setTimeout(() => {
       setYears(prev => {
         const last = prev[prev.length - 1];
