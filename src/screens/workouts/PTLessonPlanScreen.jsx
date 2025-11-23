@@ -60,11 +60,11 @@ const PTLessonPlanScreen = ({ route, navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Soạn giáo án</Text>
+          <Text style={styles.greeting}>Soạn giáo án</Text>
           <Text style={styles.headerSub}>{customer.name}</Text>
         </View>
 
-        <View style={{ width: 40 }} />
+        <View style={styles.todayBtn} />
       </View>
 
       {/* Info Box */}
@@ -84,7 +84,6 @@ const PTLessonPlanScreen = ({ route, navigation }) => {
         contentContainerStyle={{ paddingBottom: 60 }}
         renderItem={({ item }) => {
           const active = selectedExercises.includes(item.id);
-
           return (
             <TouchableOpacity
               onPress={() => toggleExercise(item.id)}
@@ -119,26 +118,59 @@ export default PTLessonPlanScreen;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
+  /* ----------- HEADER CHUẨN ------------ */
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 44,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: Platform.OS === 'android' ? 16 : 50,
+    paddingBottom: 20,
+
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-  },
-  headerIcon: { width: 40 },
-  headerTextWrap: { flex: 1, alignItems: 'center' },
-  headerTitle: { color: COLORS.onPrimary, fontWeight: '800', fontSize: 18 },
-  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  headerIcon: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+
+  headerTextWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
+    letterSpacing: 0.5,
+  },
+
+  headerSub: {
+    marginTop: 6,
+    fontSize: 14,
+    color: COLORS.primaryContainer || '#C2F0D4',
+    fontWeight: '500',
+  },
+
+  todayBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+
+  /* ----------- CONTENT ----------- */
   infoBox: {
     backgroundColor: COLORS.surface,
     borderRadius: 12,

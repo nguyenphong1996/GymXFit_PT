@@ -41,20 +41,21 @@ const PTRecentCustomerScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* HEADER */}
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ width: 40 }}
+          style={styles.headerIcon}
         >
           <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
         </TouchableOpacity>
 
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Khách hàng gần đây</Text>
+          <Text style={styles.greeting}>Khách hàng gần đây</Text>
           <Text style={styles.headerSub}>Lịch sử khách vừa book PT</Text>
         </View>
 
-        <View style={{ width: 40 }} />
+        <View style={styles.todayBtn} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -107,17 +108,52 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 44,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: Platform.OS === 'android' ? 16 : 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     elevation: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  headerTextWrap: { flex: 1, alignItems: 'center' },
-  headerTitle: { color: COLORS.onPrimary, fontSize: 18, fontWeight: '800' },
-  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
+
+  headerIcon: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+
+  headerTextWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
+    letterSpacing: 0.5,
+  },
+
+  headerSub: {
+    marginTop: 6,
+    fontSize: 14,
+    color: COLORS.primaryContainer || '#C2F0D4',
+    fontWeight: '500',
+  },
+
+  todayBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   card: {
     backgroundColor: COLORS.surface,

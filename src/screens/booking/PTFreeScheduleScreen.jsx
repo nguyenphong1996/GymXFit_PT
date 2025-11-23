@@ -533,55 +533,56 @@ export default PTFreeScheduleScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 16 : 50,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+header: {
+  backgroundColor: COLORS.primary,
+  paddingHorizontal: 20,
+  paddingTop: Platform.OS === 'android' ? 16 : 50,
+  paddingBottom: 20,
+  borderBottomLeftRadius: 24,
+  borderBottomRightRadius: 24,
+  shadowColor: COLORS.primary,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 12,
+  elevation: 8,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
 
-  headerIcon: {
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
+headerIcon: {
+  width: 40,
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+},
 
-  headerTextWrap: {
-    flex: 1,
-    alignItems: 'center',
-  },
+headerTextWrap: {
+  flex: 1,
+  alignItems: 'center',
+},
 
-  greeting: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.onPrimary,
-    letterSpacing: 0.5,
-  },
+greeting: {
+  fontSize: 24,
+  fontWeight: '700',
+  color: COLORS.onPrimary,
+  letterSpacing: 0.5,
+},
 
-  headerSub: {
-    marginTop: 6,
-    fontSize: 14,
-    color: COLORS.primaryContainer || '#C2F0D4',
-    fontWeight: '500',
-  },
+headerSub: {
+  marginTop: 6,
+  fontSize: 14,
+  color: COLORS.primaryContainer || '#C2F0D4',
+  fontWeight: '500',
+},
 
-  todayBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+todayBtn: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
 
   calendarSection: {
     backgroundColor: COLORS.surface,
