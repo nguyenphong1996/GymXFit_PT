@@ -15,10 +15,9 @@ import IconIon from 'react-native-vector-icons/Ionicons';
 import { PTContext } from '@context/PTContext';
 
 const PRIMARY_COLOR = '#30C451';
-const LIGHT_GREEN = '#E8F9EF';
 
 const PTProfileScreenContent = ({ navigation, logout }) => {
-  // 🔹 Dữ liệu mẫu (hiển thị tĩnh)
+  // 🔹 Dữ liệu mẫu
   const ptData = {
     name: 'Huấn luyện viên Nguyễn Văn Nam',
     email: 'namfit@example.com',
@@ -59,14 +58,6 @@ const PTProfileScreenContent = ({ navigation, logout }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* 🔙 Nút back góc trái không nền */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate('HomePTScreen')}
-      >
-        <IconIon name="arrow-back" size={28} color="#000" />
-      </TouchableOpacity>
-
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 🟩 Banner */}
         <View style={styles.banner}>
@@ -79,10 +70,11 @@ const PTProfileScreenContent = ({ navigation, logout }) => {
               </View>
             )}
           </View>
+
           <Text style={styles.name}>{ptData.name}</Text>
           <Text style={styles.email}>{ptData.email}</Text>
 
-          {/* 🟢 Info Box (Chuyên môn) */}
+          {/* 🟢 Info Box */}
           <View style={styles.infoBox}>
             <View style={styles.statBoxFull}>
               <Text style={styles.statValue}>{specialty}</Text>
@@ -134,10 +126,10 @@ const PTProfileScreenContent = ({ navigation, logout }) => {
   );
 };
 
-/* === COMPONENT: OptionItem === */
 const OptionItem = ({ iconLib, icon, text, onPress }) => {
   const IconSet =
     iconLib === 'MC' ? IconMC : iconLib === 'MI' ? IconMI : IconIon;
+
   return (
     <TouchableOpacity style={styles.optionItem} onPress={onPress}>
       <IconSet name={icon} size={26} color={PRIMARY_COLOR} />
@@ -149,26 +141,19 @@ const OptionItem = ({ iconLib, icon, text, onPress }) => {
 
 const PTProfileScreen = props => (
   <PTContext.Consumer>
-    {({ logout }) => (
-      <PTProfileScreenContent {...props} logout={logout} />
-    )}
+    {({ logout }) => <PTProfileScreenContent {...props} logout={logout} />}
   </PTContext.Consumer>
 );
 
 export default PTProfileScreen;
 
+/* ============================================================
+   STYLE
+   ============================================================ */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
 
-  /* 🔙 Back icon */
-  backButton: {
-    position: 'absolute',
-    top: 15,
-    left: 15,
-    zIndex: 20,
-  },
-
-  /* 🟢 HEADER mới */
+  /* 🟢 HEADER / Banner */
   banner: {
     backgroundColor: '#20B24A',
     alignItems: 'center',
@@ -192,10 +177,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  name: { fontSize: 22, fontWeight: '700', color: '#fff', marginTop: 10 },
+  name: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 10,
+  },
   email: { fontSize: 14, color: '#E0FFE8', marginBottom: 20 },
 
-  /* 🟢 Info Box (stats) */
+  /* 🟢 Info Box */
   infoBox: {
     flexDirection: 'row',
     justifyContent: 'center',
