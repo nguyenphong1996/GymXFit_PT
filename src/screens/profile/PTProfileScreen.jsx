@@ -157,11 +157,10 @@ const PTProfileScreen = props => (
 
 export default PTProfileScreen;
 
-/* === STYLES === */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
 
-  /* 🔙 Back icon góc trái */
+  /* 🔙 Back icon */
   backButton: {
     position: 'absolute',
     top: 15,
@@ -169,52 +168,50 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
 
+  /* 🟢 HEADER mới */
   banner: {
-    backgroundColor: LIGHT_GREEN,
+    backgroundColor: '#20B24A',
     alignItems: 'center',
-    paddingVertical: 30,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    paddingVertical: 40,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     marginBottom: 15,
   },
-  avatarContainer: { marginBottom: 10 },
+
+  avatarContainer: { marginBottom: 15 },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     borderWidth: 3,
-    borderColor: PRIMARY_COLOR,
-    backgroundColor: '#fff',
+    borderColor: '#fff',
+    backgroundColor: '#E8F5E9',
   },
   iconAvatar: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  name: { fontSize: 20, fontWeight: '700', color: '#222', marginTop: 5 },
-  email: { fontSize: 14, color: '#555', marginBottom: 10 },
+
+  name: { fontSize: 22, fontWeight: '700', color: '#fff', marginTop: 10 },
+  email: { fontSize: 14, color: '#E0FFE8', marginBottom: 20 },
+
+  /* 🟢 Info Box (stats) */
   infoBox: {
-    backgroundColor: PRIMARY_COLOR,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 25,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    backgroundColor: '#1A9E42',
+    borderRadius: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     width: '85%',
-    alignItems: 'center',
   },
-  statBoxFull: { alignItems: 'center', width: '100%' },
-  statValue: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 17,
-    textAlign: 'center',
-  },
-  statLabel: {
-    color: '#E8F9EF',
-    fontSize: 13,
-    marginTop: 3,
-    textAlign: 'center',
-  },
-  optionContainer: { marginTop: 10, paddingHorizontal: 20 },
+
+  statBoxFull: { alignItems: 'center', flex: 1 },
+  statValue: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  statLabel: { color: '#C8E6C9', fontSize: 13, marginTop: 3 },
+
+  /* ⚙️ Options */
+  optionContainer: { marginTop: 15, paddingHorizontal: 20 },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,22 +221,34 @@ const styles = StyleSheet.create({
   },
   optionText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     color: '#212121',
     fontWeight: '500',
     marginLeft: 15,
   },
+
+  /* 🔴 Logout */
   logoutButton: {
-    backgroundColor: '#E53935',
+    backgroundColor: '#20B24A',
     marginHorizontal: 30,
-    marginTop: 35,
+    marginTop: 40,
     marginBottom: 50,
-    borderRadius: 30,
+    borderRadius: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
     elevation: 3,
+    shadowColor: '#0F6427',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
   },
-  logoutText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  logoutText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 });
