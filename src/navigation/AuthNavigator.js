@@ -4,26 +4,22 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginPTScreen from '@screens/auth/LoginPTScreen';
 import VerifyLoginScreen from '@screens/auth/VerifyLoginScreen';
 import PTScheduleScreen from '@screens/booking/PTScheduleScreen';
-import HomePTScreen from '@screens/home/HomePTScreen'
+import HomePTScreen from '@screens/home/HomePTScreen';
 import PTLessonHistoryScreen from '@screens/workouts/PTLessonHistoryScreen';
 import PTLessonPlanScreen from '@screens/workouts/PTLessonPlanScreen';
 import PTProfileScreen from '@screens/profile/PTProfileScreen';
-import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen'
+import UpdatePTProfileScreen from '@screens/profile/UpdatePTProfileScreen';
 import PTCustomerListScreen from '@screens/customers/PTCustomerListScreen';
 import QrScannerModel from '@screens/qr/QrScannerModel';
 import PTFreeScheduleScreen from '@screens/booking/PTFreeScheduleScreen';
 import PTCustomerDetailScreen from '@screens/customers/PTCustomerDetailScreen';
 import PTRecentCustomerScreen from '@screens/customers/PTRecentCustomerScreen';
 
-
-
-
-
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <Stack.Navigator
-    initialRouteName="PTFreeScheduleScreen"
+    initialRouteName="LoginPTScreen"
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name="LoginPTScreen" component={LoginPTScreen} />

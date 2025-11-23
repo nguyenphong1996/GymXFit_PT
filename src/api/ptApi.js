@@ -27,11 +27,7 @@ export async function requestLoginOtp(phoneNumber, purpose = 'login') {
 }
 
 // ✅ Xác thực OTP đăng nhập PT
-export async function verifyLoginOtp(
-  phoneNumber,
-  code,
-  purpose = 'login',
-) {
+export async function verifyLoginOtp(phoneNumber, code, purpose = 'login') {
   try {
     const response = await createAxiosInstance().post(
       '/api/staff/auth/verify-otp',
@@ -124,8 +120,16 @@ export async function scanAttendance({ classId, qrValue }) {
     throw new Error('Không đọc được dữ liệu QR.');
   }
 
+  // Parse the QR value to extract the JSON data
+  let parsedQrValue;
+  try {
+    parsedQrValue = JSON.parse(qrValue);
+  } catch (error) {
+    throw new Error('Mã QR không hợp lệ - Không thể phân tích dữ liệu.');
+  }
+
   const payload = {
-    qrValue: serializeQrValue(qrValue),
+    qrValue: qrValue, // Send the raw string as expected by the API
   };
 
   const axiosInstance = createAxiosInstance();
@@ -153,5 +157,99 @@ export async function scanAttendance({ classId, qrValue }) {
     }
 
     throw normalizeScanError(error);
+  }
+}
+
+// 📋 Lấy danh sách lớp học được giao cho PT
+export async function getAssignedClasses(params = {}) {
+  try {
+    const response = await createAxiosInstance().get('/api/staff/classes', {
+      params: {
+        ...params,
+        cacheBust: Date.now(),
+      },
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
+    return response;
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      'Không thể tải danh sách lớp học được giao.';
+    const customError = new Error(message);
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    if (error.response?.status) {
+      customError.status = error.response.status;
+    }
+    throw customError;
+  }
+}
+
+// 🔍 Kiểm tra xem PT có được giao lớp học cụ thể không
+export async function verifyClassAssignment(classId) {
+  if (!classId) {
+    throw new Error('Thiếu mã lớp học để kiểm tra phân công.');
+  }
+
+  try {
+    const response = await createAxiosInstance().get(
+      `/api/staff/classes/${classId}/verify-assignment`,
+    );
+    return response;
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      error.response?.data?.message ||
+      (status === 403
+        ? 'Bạn không được phân công dạy lớp này.'
+        : status === 404
+        ? 'Không tìm thấy lớp học.'
+        : error.message) ||
+      'Không thể kiểm tra phân công lớp học.';
+
+    const customError = new Error(message);
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    if (status) {
+      customError.status = status;
+    }
+    throw customError;
+  }
+}
+
+// 📊 Lấy thông tin chi tiết lớp học của PT
+export async function getClassDetail(classId) {
+  if (!classId) {
+    throw new Error('Thiếu mã lớp học để lấy thông tin chi tiết.');
+  }
+
+  try {
+    const response = await createAxiosInstance().get(
+      `/api/staff/classes/${classId}`,
+    );
+    return response;
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      error.response?.data?.message ||
+      (status === 403
+        ? 'Bạn không có quyền xem thông tin lớp này.'
+        : status === 404
+        ? 'Không tìm thấy lớp học.'
+        : error.message) ||
+      'Không thể tải thông tin lớp học.';
+
+    const customError = new Error(message);
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    if (status) {
+      customError.status = status;
+    }
+    throw customError;
   }
 }
