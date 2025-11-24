@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEFAULT_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL
   || process.env.API_BASE_URL
-  || 'https://be.phongnguyen.software/';
+  || 'https://be.vnchack.com/';
 
 const createAxiosInstance = (contentType = 'application/json') => {
   const axiosInstance = axios.create({
