@@ -22,7 +22,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CameraKitModule, { Camera, CameraType } from 'react-native-camera-kit';
 
-import { scanAttendance } from '@api/ptApi';
+import { scanAttendance, verifyClassAssignment } from '@api/ptApi';
 
 const PALETTE = {
   primary: '#30C451',
@@ -314,6 +314,10 @@ const QrScannerModel = () => {
       }
 
       try {
+        // First verify PT assignment to this class
+        await verifyClassAssignment(classId);
+
+        // If assignment is valid, proceed with attendance scan
         const response = await scanAttendance({
           classId,
           qrValue: value,
@@ -327,7 +331,8 @@ const QrScannerModel = () => {
         }
 
         const message =
-          response?.message || 'Quét mã thành công! Học viên đã được điểm danh.';
+          response?.message ||
+          'Quét mã thành công! Học viên đã được điểm danh.';
         showResult(SCAN_STATUS.success, message);
       } catch (error) {
         const status = resolveErrorType(error?.message, error?.code);

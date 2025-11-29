@@ -5,15 +5,26 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+const COLORS = {
+  primary: '#1F8E4A',
+  onPrimary: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceVariant: '#E7EFE8',
+  outline: '#D7E5DB',
+  background: '#F5F7F6',
+  textPrimary: '#10241A',
+  textSecondary: '#47614F',
+};
+
 const PTLessonPlanScreen = ({ route, navigation }) => {
-  // ✅ Tránh crash nếu không có route.params
   const customer = route?.params?.customer || {
     name: 'Khách hàng chưa xác định',
     phone: 'N/A',
-    request: 'Không có yêu cầu cụ thể',
+    request: 'Không có yêu cầu',
   };
 
   const [selectedExercises, setSelectedExercises] = useState([]);
@@ -27,11 +38,9 @@ const PTLessonPlanScreen = ({ route, navigation }) => {
   ];
 
   const toggleExercise = id => {
-    if (selectedExercises.includes(id)) {
-      setSelectedExercises(selectedExercises.filter(item => item !== id));
-    } else {
-      setSelectedExercises([...selectedExercises, id]);
-    }
+    setSelectedExercises(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
   };
 
   const handleSave = () => {
@@ -41,53 +50,63 @@ const PTLessonPlanScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerIcon}
+        >
+          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Soạn giáo án</Text>
+
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Soạn giáo án</Text>
+          <Text style={styles.headerSub}>{customer.name}</Text>
+        </View>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.customerBox}>
-        <Text style={styles.customerName}>{customer.name}</Text>
-        <Text style={styles.customerPhone}>📞 {customer.phone}</Text>
-        <Text style={styles.customerRequest}>Yêu cầu: {customer.request}</Text>
+      {/* Info Box */}
+      <View style={styles.infoBox}>
+        <Text style={styles.infoName}>{customer.name}</Text>
+        <Text style={styles.infoPhone}>📞 {customer.phone}</Text>
+        <Text style={styles.infoRequest}>Yêu cầu: {customer.request}</Text>
       </View>
 
+      {/* Title */}
       <Text style={styles.title}>Chọn bài tập</Text>
 
+      {/* List */}
       <FlatList
         data={exercises}
         keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.exerciseItem,
-              selectedExercises.includes(item.id) && styles.selectedItem,
-            ]}
-            onPress={() => toggleExercise(item.id)}
-          >
-            <Text
-              style={[
-                styles.exerciseText,
-                selectedExercises.includes(item.id) && styles.selectedText,
-              ]}
+        contentContainerStyle={{ paddingBottom: 60 }}
+        renderItem={({ item }) => {
+          const active = selectedExercises.includes(item.id);
+
+          return (
+            <TouchableOpacity
+              onPress={() => toggleExercise(item.id)}
+              style={[styles.exerciseCard, active && styles.selectedCard]}
             >
-              {item.name}
-            </Text>
-            <Icon
-              name={
-                selectedExercises.includes(item.id)
-                  ? 'check-circle'
-                  : 'radio-button-unchecked'
-              }
-              size={22}
-              color={selectedExercises.includes(item.id) ? '#20B24A' : '#ccc'}
-            />
-          </TouchableOpacity>
-        )}
+              <Text
+                style={[styles.exerciseText, active && styles.selectedText]}
+              >
+                {item.name}
+              </Text>
+
+              <Icon
+                name={active ? 'check-circle' : 'radio-button-unchecked'}
+                size={22}
+                color={active ? COLORS.primary : '#999'}
+              />
+            </TouchableOpacity>
+          );
+        }}
       />
 
+      {/* Save Button */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveText}>Lưu giáo án</Text>
       </TouchableOpacity>
@@ -98,42 +117,85 @@ const PTLessonPlanScreen = ({ route, navigation }) => {
 export default PTLessonPlanScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 18 : 44,
+    paddingBottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 40,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', marginLeft: 10 },
-  customerBox: {
-    backgroundColor: '#E8F5E9',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+  headerIcon: { width: 40 },
+  headerTextWrap: { flex: 1, alignItems: 'center' },
+  headerTitle: { color: COLORS.onPrimary, fontWeight: '800', fontSize: 18 },
+  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
+
+  infoBox: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.outline,
+    margin: 16,
+    padding: 16,
   },
-  customerName: { fontSize: 18, fontWeight: '700', color: '#000' },
-  customerPhone: { fontSize: 15, color: '#333' },
-  customerRequest: { fontSize: 14, color: '#555' },
-  title: { fontSize: 18, fontWeight: '700', marginVertical: 10, color: '#000' },
-  exerciseItem: {
+  infoName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  infoPhone: {
+    marginTop: 4,
+    fontSize: 15,
+    color: COLORS.textSecondary,
+  },
+  infoRequest: {
+    marginTop: 6,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 16,
+    marginBottom: 10,
+    color: COLORS.textPrimary,
+  },
+
+  exerciseCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 10,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 8,
+    borderColor: COLORS.outline,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 10,
   },
-  selectedItem: { backgroundColor: '#C8E6C9', borderColor: '#20B24A' },
-  exerciseText: { fontSize: 16, color: '#000' },
-  selectedText: { color: '#20B24A', fontWeight: '700' },
+  selectedCard: {
+    backgroundColor: COLORS.surfaceVariant,
+    borderColor: COLORS.primary,
+  },
+
+  exerciseText: { fontSize: 16, color: COLORS.textPrimary },
+  selectedText: { color: COLORS.primary, fontWeight: '700' },
+
   saveButton: {
-    backgroundColor: '#20B24A',
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
     paddingVertical: 14,
-    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    margin: 16,
   },
-  saveText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  saveText: { color: COLORS.onPrimary, fontSize: 17, fontWeight: '700' },
 });

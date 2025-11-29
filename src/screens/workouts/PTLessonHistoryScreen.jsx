@@ -5,11 +5,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+const COLORS = {
+  primary: '#1F8E4A',
+  onPrimary: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceVariant: '#E7EFE8',
+  outline: '#D7E5DB',
+  background: '#F5F7F6',
+  textPrimary: '#10241A',
+  textSecondary: '#47614F',
+};
+
 const PTLessonHistoryScreen = ({ route, navigation }) => {
-  // ✅ Tránh crash khi route.params không có
   const customer = route?.params?.customer || {
     name: 'Khách hàng chưa xác định',
     phone: 'N/A',
@@ -31,27 +42,41 @@ const PTLessonHistoryScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Header (đồng bộ PTSchedule + PTCustomerList) */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerIcon}
+        >
+          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lịch sử giáo án</Text>
+
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Lịch sử giáo án</Text>
+          <Text style={styles.headerSub}>{customer.name}</Text>
+        </View>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.customerBox}>
-        <Text style={styles.customerName}>{customer.name}</Text>
-        <Text style={styles.customerPhone}>📞 {customer.phone}</Text>
+      {/* Info Box */}
+      <View style={styles.infoBox}>
+        <Text style={styles.infoName}>{customer.name}</Text>
+        <Text style={styles.infoPhone}>📞 {customer.phone}</Text>
       </View>
 
+      {/* List */}
       <FlatList
         data={lessons}
         keyExtractor={item => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 30 }}
         renderItem={({ item }) => (
-          <View style={styles.lessonItem}>
+          <View style={styles.lessonCard}>
             <View style={styles.lessonHeader}>
-              <Icon name="date-range" size={20} color="#20B24A" />
+              <Icon name="date-range" size={20} color={COLORS.primary} />
               <Text style={styles.lessonDate}>{item.date}</Text>
             </View>
+
             {item.exercises.map((ex, idx) => (
               <Text key={idx} style={styles.exercise}>
                 • {ex}
@@ -67,36 +92,67 @@ const PTLessonHistoryScreen = ({ route, navigation }) => {
 export default PTLessonHistoryScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 18 : 44,
+    paddingBottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 10,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', marginLeft: 10 },
-  customerBox: {
-    backgroundColor: '#E8F5E9',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  customerName: { fontSize: 18, fontWeight: '700', color: '#000' },
-  customerPhone: { fontSize: 15, color: '#333' },
-  lessonItem: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+  headerIcon: { width: 40 },
+  headerTextWrap: { flex: 1, alignItems: 'center' },
+  headerTitle: { color: COLORS.onPrimary, fontWeight: '800', fontSize: 18 },
+  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
+
+  infoBox: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: COLORS.outline,
+    margin: 16,
+    padding: 16,
+  },
+  infoName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  infoPhone: {
+    marginTop: 4,
+    fontSize: 15,
+    color: COLORS.textSecondary,
+  },
+
+  lessonCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.outline,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
   lessonHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   lessonDate: {
-    marginLeft: 6,
+    marginLeft: 8,
     fontSize: 16,
     fontWeight: '700',
-    color: '#20B24A',
+    color: COLORS.primary,
   },
-  exercise: { fontSize: 15, color: '#000', marginLeft: 6 },
+  exercise: {
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    marginLeft: 8,
+    marginTop: 2,
+  },
 });

@@ -7,40 +7,58 @@ import {
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useRoute } from '@react-navigation/native'; // ✅ thêm hook
+import { useNavigation, useRoute } from '@react-navigation/native';
+
+const COLORS = {
+  primary: '#1F8E4A',
+  onPrimary: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceVariant: '#E7EFE8',
+  outline: '#D7E5DB',
+  background: '#F5F7F6',
+  textPrimary: '#10241A',
+  textSecondary: '#47614F',
+};
 
 const PTCustomerDetailScreen = () => {
-  const navigation = useNavigation(); // ✅ đảm bảo back hoạt động trong mọi context
+  const navigation = useNavigation();
   const route = useRoute();
-  const { customer } = route.params || {}; // tránh lỗi nếu không truyền params
+  const { customer } = route.params || {};
 
   return (
     <View style={styles.container}>
-      {/* 🔹 Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={styles.headerIcon}
           activeOpacity={0.6}
-          onPress={() => navigation.goBack()} // ✅ hoạt động chuẩn
+          onPress={() => navigation.goBack()}
         >
-          <Icon name="arrow-back" size={26} color="#fff" />
+          <Icon name="arrow-back" size={26} color={COLORS.onPrimary} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Thông tin khách hàng</Text>
-        <View style={{ width: 30 }} />
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Thông tin khách hàng</Text>
+          <Text style={styles.headerSub}>Chi tiết hồ sơ khách hàng</Text>
+        </View>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* 🔹 Nội dung */}
+      {/* Content */}
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* 🧍‍♂️ Avatar bằng icon vector */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarBox}>
-            <Icon name="person-circle-outline" size={110} color="#20B24A" />
+            <Icon
+              name="person-circle-outline"
+              size={110}
+              color={COLORS.primary}
+            />
           </View>
           <Text style={styles.name}>{customer?.name || 'Chưa có tên'}</Text>
         </View>
 
-        {/* 🧾 Thông tin chi tiết */}
+        {/* Info Section */}
         <View style={styles.formBox}>
           <View style={styles.formGroup}>
             <Text style={styles.label}>Tuổi</Text>
@@ -78,30 +96,36 @@ const PTCustomerDetailScreen = () => {
 export default PTCustomerDetailScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
-  // 🟩 Header
   header: {
-    backgroundColor: '#20B24A',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    elevation: 3,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  backButton: {
-    padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  headerIcon: { width: 40, alignItems: 'flex-start' },
+  headerTextWrap: { flex: 1, alignItems: 'center' },
   headerTitle: {
-    color: '#fff',
+    color: COLORS.onPrimary,
+    fontWeight: '800',
     fontSize: 18,
-    fontWeight: '700',
+  },
+  headerSub: {
+    color: '#C2F0D4',
+    fontSize: 12,
+    marginTop: 4,
   },
 
-  // 🧍‍♂️ Avatar Section
   scroll: {
     paddingHorizontal: 20,
     paddingBottom: 30,
@@ -112,7 +136,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avatarBox: {
-    backgroundColor: '#E9F8EE',
+    backgroundColor: COLORS.surfaceVariant,
     borderRadius: 80,
     padding: 6,
     marginBottom: 10,
@@ -120,39 +144,34 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.textPrimary,
   },
 
-  // 🧾 Form Section
   formBox: {
-    backgroundColor: '#F9FDFB',
+    backgroundColor: COLORS.surface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#DCEFE1',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    borderColor: COLORS.outline,
   },
   formGroup: { marginBottom: 14 },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: COLORS.textSecondary,
     marginBottom: 6,
   },
   inputBox: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DCEFE1',
+    borderColor: COLORS.outline,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
   value: {
     fontSize: 16,
-    color: '#000',
+    color: COLORS.textPrimary,
     fontWeight: '500',
   },
 });

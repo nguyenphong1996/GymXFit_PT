@@ -1,3 +1,4 @@
+// PTRecentCustomerScreen - synced UI with PTScheduleScreen & PTCustomerListScreen
 import React from 'react';
 import {
   View,
@@ -6,13 +7,24 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
+const COLORS = {
+  primary: '#1F8E4A',
+  onPrimary: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceVariant: '#E7EFE8',
+  outline: '#D7E5DB',
+  background: '#F5F7F6',
+  textPrimary: '#10241A',
+  textSecondary: '#47614F',
+};
 
 const PTRecentCustomerScreen = ({ navigation }) => {
   const now = new Date().getTime();
 
-  // ❗ Dữ liệu mẫu — sau này thay bằng API
   const recentCustomers = [
     {
       id: 99,
@@ -20,7 +32,7 @@ const PTRecentCustomerScreen = ({ navigation }) => {
       phone: '0912345678',
       avatar: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
       bookStart: now - 1000 * 60 * 120,
-      bookEnd: now - 1000 * 60 * 10, // vừa kết thúc 10 phút
+      bookEnd: now - 1000 * 60 * 10,
     },
   ];
 
@@ -28,15 +40,24 @@ const PTRecentCustomerScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#fff" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ width: 40 }}
+        >
+          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Khách hàng gần đây</Text>
-        <View style={{ width: 24 }} />
+
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Khách hàng gần đây</Text>
+          <Text style={styles.headerSub}>Lịch sử khách vừa book PT</Text>
+        </View>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {recentCustomers.map(c => (
           <View key={c.id} style={styles.card}>
             <View style={styles.row}>
@@ -54,7 +75,6 @@ const PTRecentCustomerScreen = ({ navigation }) => {
               🕘 Kết thúc: {formatTime(c.bookEnd)}
             </Text>
 
-            {/* 🔹 Nút xem lại thông tin */}
             <TouchableOpacity
               style={styles.detailBtn}
               onPress={() =>
@@ -64,7 +84,6 @@ const PTRecentCustomerScreen = ({ navigation }) => {
               <Text style={styles.btnText}>Xem lại thông tin</Text>
             </TouchableOpacity>
 
-            {/* 🔥 Nút mới: xem lịch sử giáo án */}
             <TouchableOpacity
               style={styles.historyBtn}
               onPress={() =>
@@ -83,53 +102,55 @@ const PTRecentCustomerScreen = ({ navigation }) => {
 export default PTRecentCustomerScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   header: {
-    backgroundColor: '#20B24A',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 18 : 44,
+    paddingBottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 8,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  headerTextWrap: { flex: 1, alignItems: 'center' },
+  headerTitle: { color: COLORS.onPrimary, fontSize: 18, fontWeight: '800' },
+  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
 
   card: {
-    backgroundColor: '#F8FFF9',
-    padding: 14,
-    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D4EEDB',
-    marginBottom: 12,
+    borderColor: COLORS.outline,
+    marginBottom: 14,
+    elevation: 2,
   },
 
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
+  avatar: { width: 52, height: 52, borderRadius: 26, marginRight: 12 },
 
-  name: { fontSize: 16, fontWeight: '700' },
-  phone: { color: '#555' },
+  name: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  phone: { color: COLORS.textSecondary },
 
-  timeText: { color: '#1E88E5', marginBottom: 4 },
+  timeText: { marginTop: 4, color: '#1E88E5', fontSize: 13 },
 
   detailBtn: {
-    backgroundColor: '#20B24A',
+    backgroundColor: COLORS.primary,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
   },
-
   historyBtn: {
     backgroundColor: '#1E88E5',
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
   },
 
-  btnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
