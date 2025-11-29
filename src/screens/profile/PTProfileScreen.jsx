@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,27 +8,45 @@ import {
   StatusBar,
   Image,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import IconIon from 'react-native-vector-icons/Ionicons';
-import { PTContext } from '@context/PTContext';
+import { PTContext } from '../../context/PTContext';
 
 const PRIMARY_COLOR = '#30C451';
 const LIGHT_GREEN = '#E8F9EF';
 
-const PTProfileScreenContent = ({ navigation, logout }) => {
-  // 🔹 Dữ liệu mẫu (hiển thị tĩnh)
-  const ptData = {
-    name: 'Huấn luyện viên Nguyễn Văn Nam',
-    email: 'namfit@example.com',
-    phone: '0909 123 456',
-    skills: ['Workout', 'Cardio', 'Stretching', 'Nutrition', 'Yoga'],
-    avatar: null,
-  };
+const PTProfileScreenContent = ({ navigation }) => {
+  const { ptInfo, logout, fetchProfile, loadingProfile } =
+    useContext(PTContext);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const specialty =
-    ptData.skills && ptData.skills.length > 0 ? ptData.skills[0] : 'Chưa có';
+  const profile = ptInfo || {};
+  const skills = Array.isArray(profile.skills) ? profile.skills : [];
+
+  const specialty = useMemo(() => {
+    if (!skills.length) return 'Chưa có';
+    const skill = skills[0];
+    return skill
+      ? skill.charAt(0).toUpperCase() + skill.slice(1)
+      : 'Chưa có';
+  }, [skills]);
+
+  // Ẩn trạng thái skill để giao diện gọn gàng
+  const skillUpdateStatus = null;
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchProfile();
+    } catch (error) {
+      Alert.alert('Lỗi', error?.message || 'Không thể tải hồ sơ PT.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchProfile]);
 
   const handleLogout = () => {
     if (typeof logout !== 'function') {
@@ -67,28 +85,33 @@ const PTProfileScreenContent = ({ navigation, logout }) => {
         <IconIon name="arrow-back" size={28} color="#000" />
       </TouchableOpacity>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || loadingProfile}
+            onRefresh={handleRefresh}
+            tintColor={PRIMARY_COLOR}
+          />
+        }
+      >
         {/* 🟩 Banner */}
         <View style={styles.banner}>
           <View style={styles.avatarContainer}>
-            {ptData.avatar ? (
-              <Image style={styles.avatar} source={{ uri: ptData.avatar }} />
+            {profile.avatar ? (
+              <Image style={styles.avatar} source={{ uri: profile.avatar }} />
             ) : (
               <View style={[styles.avatar, styles.iconAvatar]}>
                 <IconMC name="account-circle" size={110} color="#A5D6A7" />
               </View>
             )}
           </View>
-          <Text style={styles.name}>{ptData.name}</Text>
-          <Text style={styles.email}>{ptData.email}</Text>
+          <Text style={styles.name}>
+            {profile.name || 'Chưa cập nhật họ tên'}
+          </Text>
+          <Text style={styles.email}>{profile.email || 'Chưa có email'}</Text>
 
-          {/* 🟢 Info Box (Chuyên môn) */}
-          <View style={styles.infoBox}>
-            <View style={styles.statBoxFull}>
-              <Text style={styles.statValue}>{specialty}</Text>
-              <Text style={styles.statLabel}>Chuyên môn</Text>
-            </View>
-          </View>
+          {/* Trạng thái kỹ năng bỏ hiển thị để gọn gàng */}
         </View>
 
         {/* ⚙️ Danh mục chức năng */}
@@ -147,13 +170,7 @@ const OptionItem = ({ iconLib, icon, text, onPress }) => {
   );
 };
 
-const PTProfileScreen = props => (
-  <PTContext.Consumer>
-    {({ logout }) => (
-      <PTProfileScreenContent {...props} logout={logout} />
-    )}
-  </PTContext.Consumer>
-);
+const PTProfileScreen = props => <PTProfileScreenContent {...props} />;
 
 export default PTProfileScreen;
 
@@ -208,8 +225,11 @@ const styles = StyleSheet.create({
 
   statBoxFull: { alignItems: 'center', flex: 1 },
   statValue: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  statLabel: { color: '#C8E6C9', fontSize: 13, marginTop: 3 },
-
+  skillStatus: {
+    color: '#FBE9A7',
+    marginTop: 8,
+    fontSize: 13,
+  },
   /* ⚙️ Options */
   optionContainer: { marginTop: 15, paddingHorizontal: 20 },
   optionItem: {

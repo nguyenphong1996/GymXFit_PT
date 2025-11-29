@@ -74,6 +74,74 @@ export async function getProfile() {
   }
 }
 
+// ✏️ Cập nhật hồ sơ PT (không bao gồm skills/avatar)
+export async function updateProfile(payload = {}) {
+  try {
+    const response = await createAxiosInstance().put(
+      '/api/staff/profile',
+      payload,
+    );
+    return response;
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể cập nhật hồ sơ PT.';
+    const customError = new Error(message);
+    if (status) customError.status = status;
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    throw customError;
+  }
+}
+
+// 🛠️ Gửi yêu cầu cập nhật kỹ năng (cần admin duyệt)
+export async function requestSkillUpdate(skills = []) {
+  try {
+    const response = await createAxiosInstance().put(
+      '/api/staff/profile/skills',
+      { skills },
+    );
+    return response;
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể gửi yêu cầu cập nhật kỹ năng.';
+    const customError = new Error(message);
+    if (status) customError.status = status;
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    throw customError;
+  }
+}
+
+// 🖼️ Cập nhật avatar PT
+export async function updateAvatar(formData) {
+  try {
+    const response = await createAxiosInstance(
+      'multipart/form-data',
+    ).put('/api/staff/profile/avatar', formData);
+    return response;
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể cập nhật ảnh đại diện.';
+    const customError = new Error(message);
+    if (status) customError.status = status;
+    if (error.response?.data?.error) {
+      customError.code = error.response.data.error;
+    }
+    throw customError;
+  }
+}
+
 const serializeQrValue = value => {
   if (value === undefined || value === null) {
     return value;
