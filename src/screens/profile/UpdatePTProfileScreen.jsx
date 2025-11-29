@@ -285,10 +285,25 @@ const styles = StyleSheet.create({
   checkboxLabel: { fontSize: 14, color: '#333' },
   saveButton: {
     backgroundColor: PRIMARY_COLOR,
-    borderRadius: 30,
-    marginTop: 25,
-    paddingVertical: 14,
+    marginHorizontal: 30,
+    marginTop: 40,
+    marginBottom: 40,
+    borderRadius: 14, // bo góc giống logoutButton
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 14,
+    elevation: 3, // đổ bóng Android
+    shadowColor: '#0F6427', // bóng mờ iOS
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 });

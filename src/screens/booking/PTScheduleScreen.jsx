@@ -1,10 +1,3 @@
-// 📁 src/screens/booking/PTScheduleScreen.js
-// Reference screenshot (provided asset): /mnt/data/496b10e5-3dbc-4ef3-b557-c5ce6fe05a42.png
-// Material-like schedule screen:
-// - Header shows: "Thứ X, dd/mm/yyyy" between prev/next arrows
-// - Tap that label to open Year Picker modal
-// - Year Picker shows 7 visible rows, starts at 2015 and appends forward infinitely
-
 import React, {
   useState,
   useRef,
@@ -117,8 +110,7 @@ const DayItem = ({ item, isSelected, isToday, onPress }) => (
   </TouchableOpacity>
 );
 
-/* YearPickerList: starts from `startYear`, initial end `initialEndYear`,
-   shows VISIBLE_YEAR_ROWS, appends forward when scrolling near end */
+/* YearPickerList */
 const YearPickerList = ({
   startYear = 2015,
   initialEndYear = new Date().getFullYear() + 5,
@@ -136,7 +128,6 @@ const YearPickerList = ({
   const listRef = useRef(null);
   const isAppendingRef = useRef(false);
 
-  // ensure selectedYear exists in list and scroll to it
   useEffect(() => {
     if (!listRef.current) return;
     const idx = years.findIndex(y => y === selectedYear);
@@ -150,9 +141,8 @@ const YearPickerList = ({
       }, 40);
       return;
     }
-    // if selectedYear is beyond end, append until included
+
     if (selectedYear > years[years.length - 1]) {
-      // append chunks until selectedYear included
       const to = selectedYear + 5;
       const append = [];
       for (let y = years[years.length - 1] + 1; y <= to; y++) append.push(y);
@@ -167,20 +157,7 @@ const YearPickerList = ({
           });
         }
       }, 80);
-    } else {
-      // shouldn't happen often — just attempt to find & scroll
-      const idx2 = years.findIndex(y => y === selectedYear);
-      if (idx2 >= 0) {
-        setTimeout(() => {
-          listRef.current?.scrollToIndex({
-            index: idx2,
-            animated: false,
-            viewPosition: 0.5,
-          });
-        }, 40);
-      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear]);
 
   const appendMore = useCallback(() => {
@@ -261,7 +238,6 @@ const PTScheduleScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [yearModalVisible, setYearModalVisible] = useState(false);
 
-  // notifications demo
   const notifications = useMemo(
     () => ({
       '2025-11-01': 'Buổi sáng: Dẫn nhóm tập ngực.\nChiều: Họp PT lúc 17h.',
@@ -295,7 +271,6 @@ const PTScheduleScreen = ({ navigation }) => {
     return arr;
   }, [currentMonth, daysInMonthCount]);
 
-  // sync selected index and scroll when month or selectedDate changes
   useEffect(() => {
     const idx = daysForMonth.findIndex(d => isSameDay(d.dateObj, selectedDate));
     if (idx >= 0) {
@@ -310,7 +285,6 @@ const PTScheduleScreen = ({ navigation }) => {
       return;
     }
 
-    // clamp day if selectedDate not in current month
     const dayNum = selectedDate.getDate();
     const clamped = Math.min(Math.max(1, dayNum), daysForMonth.length);
     const newDate = new Date(
@@ -319,17 +293,9 @@ const PTScheduleScreen = ({ navigation }) => {
       clamped,
     );
     newDate.setHours(0, 0, 0, 0);
-    const newIdx = clamped - 1;
+
     setSelectedDate(newDate);
-    setSelectedDateIndex(newIdx);
-    setTimeout(() => {
-      flatListRef.current?.scrollToIndex({
-        index: newIdx,
-        animated: true,
-        viewPosition: 0.5,
-      });
-    }, 60);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setSelectedDateIndex(clamped - 1);
   }, [daysForMonth]);
 
   const goToPreviousMonth = useCallback(() => {
@@ -367,12 +333,6 @@ const PTScheduleScreen = ({ navigation }) => {
     newSel.setHours(0, 0, 0, 0);
     setSelectedDate(newSel);
   }, [currentMonth, selectedDate, daysInMonthCount]);
-
-  const goToToday = useCallback(() => {
-    const t = new Date(todayRef.current);
-    setCurrentMonth(new Date(t.getFullYear(), t.getMonth(), 1));
-    setSelectedDate(t);
-  }, []);
 
   const handlePressDay = useCallback(dayItem => {
     setSelectedDate(dayItem.dateObj);
@@ -416,10 +376,8 @@ const PTScheduleScreen = ({ navigation }) => {
     }, 80);
   }, [selectedDateIndex, daysForMonth.length]);
 
-  // month / year label shown between arrows (full day + date)
   const headerLabel = dayLabelFull(selectedDate);
 
-  // Year selection handler (from YearPickerList)
   const onSelectYear = useCallback(
     year => {
       const month = currentMonth.getMonth();
@@ -438,48 +396,17 @@ const PTScheduleScreen = ({ navigation }) => {
     [currentMonth, selectedDate, daysInMonthCount],
   );
 
-  const monthNames = [
-    'Tháng 1',
-    'Tháng 2',
-    'Tháng 3',
-    'Tháng 4',
-    'Tháng 5',
-    'Tháng 6',
-    'Tháng 7',
-    'Tháng 8',
-    'Tháng 9',
-    'Tháng 10',
-    'Tháng 11',
-    'Tháng 12',
-  ];
-  const monthYearLabel = `${
-    monthNames[currentMonth.getMonth()]
-  }, ${currentMonth.getFullYear()}`;
-
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* HEADER — đã xoá icon */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerIcon}
-        >
-          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTextWrap}>
+        <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.greeting}>Lịch PT</Text>
           <Text style={styles.headerSub}>Xem thông báo công việc</Text>
         </View>
-
-        <View style={{ width: 40 }}>
-          <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-            <Icon name="today" size={20} color={COLORS.onPrimary} />
-          </TouchableOpacity>
-        </View>
       </View>
 
-      {/* Calendar section */}
+      {/* Calendar */}
       <View style={styles.calendarSection}>
         <View style={styles.calendarHeader}>
           <TouchableOpacity
@@ -489,7 +416,6 @@ const PTScheduleScreen = ({ navigation }) => {
             <Icon name="chevron-left" size={22} color={COLORS.primary} />
           </TouchableOpacity>
 
-          {/* Middle label (full day + date) - tappable to open year modal */}
           <TouchableOpacity
             style={styles.monthYearButton}
             activeOpacity={0.85}
@@ -512,7 +438,6 @@ const PTScheduleScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Horizontal day pills */}
         <FlatList
           ref={flatListRef}
           horizontal
@@ -536,9 +461,6 @@ const PTScheduleScreen = ({ navigation }) => {
               });
             }, 300);
           }}
-          windowSize={11}
-          maxToRenderPerBatch={15}
-          removeClippedSubviews={Platform.OS === 'android'}
           onLayout={onDaysLayout}
         />
       </View>
@@ -577,7 +499,7 @@ const PTScheduleScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Year Picker modal */}
+      {/* Year Picker */}
       <Modal
         visible={yearModalVisible}
         animationType="fade"
@@ -594,7 +516,6 @@ const PTScheduleScreen = ({ navigation }) => {
               <TouchableOpacity
                 onPress={() => setYearModalVisible(false)}
                 style={modalStyles.closeBtn}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Icon name="close" size={22} color="#333" />
               </TouchableOpacity>
@@ -603,8 +524,6 @@ const PTScheduleScreen = ({ navigation }) => {
             <YearPickerList
               startYear={2015}
               initialEndYear={Math.max(new Date().getFullYear(), 2015) + 5}
-              rowHeight={YEAR_ROW_HEIGHT}
-              visibleRows={VISIBLE_YEAR_ROWS}
               selectedYear={selectedDate.getFullYear()}
               onSelectYear={onSelectYear}
             />
@@ -621,33 +540,46 @@ export default PTScheduleScreen;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
-  header: {
+ header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 44,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: Platform.OS === 'android' ? 16 : 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-  },
-  headerIcon: { width: 40, alignItems: 'flex-start' },
-  headerTextWrap: { flex: 1, alignItems: 'center' },
-  greeting: { color: COLORS.onPrimary, fontWeight: '800', fontSize: 18 },
-  headerSub: { color: '#C2F0D4', fontSize: 12, marginTop: 4 },
-  todayBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+
+  headerIcon: {
+    width: 40,
     justifyContent: 'center',
-    opacity: 0.95,
+    alignItems: 'flex-start',
+  },
+
+  headerTextWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
+    letterSpacing: 0.5,
+  },
+
+  headerSub: {
+    marginTop: 6,
+    fontSize: 14,
+    color: COLORS.primaryContainer || '#C2F0D4',
+    fontWeight: '500',
   },
 
   calendarSection: {
@@ -656,6 +588,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outline,
   },
+
   calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -701,11 +634,6 @@ const styles = StyleSheet.create({
   selectedDayContainer: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 6,
   },
   todayContainer: { borderColor: COLORS.primary, borderWidth: 2 },
 
@@ -736,6 +664,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.outline,
     backgroundColor: COLORS.surface,
   },
+
   daySummaryTitle: {
     fontSize: 16,
     fontWeight: '800',
@@ -759,7 +688,6 @@ const styles = StyleSheet.create({
   noticeText: { color: COLORS.textPrimary, fontSize: 15, lineHeight: 20 },
   noticeEmpty: { color: COLORS.textSecondary, fontStyle: 'italic' },
 
-  /* Year picker rows */
   yearRow: {
     height: YEAR_ROW_HEIGHT,
     justifyContent: 'center',

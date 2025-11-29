@@ -1,5 +1,4 @@
-// Updated PTCustomerListScreen with unified UI colors + header matching PTScheduleScreen
-// COLORS copied from PTScheduleScreen for consistency
+// PTCustomerListScreen - UI theo Material Header chuẩn (không có nút quay lại)
 
 import React, { useState } from 'react';
 import {
@@ -14,15 +13,20 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const COLORS = {
+/* MATERIAL COLOR SYSTEM */
+const MATERIAL_COLORS = {
   primary: '#1F8E4A',
   onPrimary: '#FFFFFF',
+  primaryContainer: '#C2F0D4',
   surface: '#FFFFFF',
   surfaceVariant: '#E7EFE8',
   outline: '#D7E5DB',
   background: '#F5F7F6',
   textPrimary: '#10241A',
   textSecondary: '#47614F',
+  success: '#4CAF50',
+  warning: '#FFB300',
+  error: '#E53935',
 };
 
 const PTCustomerListScreen = ({ navigation }) => {
@@ -80,26 +84,27 @@ const PTCustomerListScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* HEADER (same style as PTScheduleScreen) */}
+      {/* ------------------------------------------------- */}
+      {/* MATERIAL HEADER (Không có nút quay lại)           */}
+      {/* ------------------------------------------------- */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerIcon}
-        >
-          <Icon name="arrow-back" size={22} color={COLORS.onPrimary} />
-        </TouchableOpacity>
+        <View style={styles.headerTop}>
+          <View style={styles.greetingRow}>
+            <View>
+              <Text style={styles.greeting}>Khách đang book PT</Text>
+              <Text style={styles.headerSubtitle}>
+                Danh sách học viên đang active
+              </Text>
+            </View>
 
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Khách đang book PT</Text>
-          <Text style={styles.headerSub}>Danh sách học viên đang active</Text>
+            <View style={{ width: 40 }} />
+          </View>
         </View>
-
-        <View style={{ width: 40 }} />
       </View>
 
       {/* SEARCH BOX */}
       <View style={styles.searchBox}>
-        <Icon name="search" size={22} color={COLORS.primary} />
+        <Icon name="search" size={22} color={MATERIAL_COLORS.primary} />
         <TextInput
           style={styles.input}
           placeholder="Tìm theo tên hoặc số điện thoại..."
@@ -113,7 +118,7 @@ const PTCustomerListScreen = ({ navigation }) => {
         style={styles.recentBtn}
         onPress={() => navigation.navigate('PTRecentCustomerScreen')}
       >
-        <Icon name="history" size={22} color={COLORS.onPrimary} />
+        <Icon name="history" size={22} color={MATERIAL_COLORS.onPrimary} />
         <Text style={styles.recentText}>Khách hàng gần đây</Text>
       </TouchableOpacity>
 
@@ -135,7 +140,10 @@ const PTCustomerListScreen = ({ navigation }) => {
             {/* BUTTONS */}
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={[styles.btnSmall, { backgroundColor: '#FFA000' }]}
+                style={[
+                  styles.btnSmall,
+                  { backgroundColor: MATERIAL_COLORS.warning },
+                ]}
                 onPress={() =>
                   navigation.navigate('PTCustomerDetailScreen', { customer: c })
                 }
@@ -144,7 +152,10 @@ const PTCustomerListScreen = ({ navigation }) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.btnSmall, { backgroundColor: COLORS.primary }]}
+                style={[
+                  styles.btnSmall,
+                  { backgroundColor: MATERIAL_COLORS.primary },
+                ]}
                 onPress={() =>
                   navigation.navigate('PTLessonPlanScreen', { customer: c })
                 }
@@ -170,54 +181,67 @@ const PTCustomerListScreen = ({ navigation }) => {
 
 export default PTCustomerListScreen;
 
-/* Styles unified with PTScheduleScreen */
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+/* --------------------------------------------------- */
+/*                       STYLES                        */
+/* --------------------------------------------------- */
 
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: MATERIAL_COLORS.background },
+
+  /* HEADER theo mẫu bạn gửi */
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: MATERIAL_COLORS.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 44,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    paddingTop: Platform.OS === 'android' ? 16 : 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: MATERIAL_COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },
-  headerIcon: { width: 40, alignItems: 'flex-start' },
-  headerTextWrap: { flex: 1, alignItems: 'center' },
-  headerTitle: {
-    color: COLORS.onPrimary,
-    fontWeight: '800',
-    fontSize: 18,
+  headerTop: { marginBottom: 20 },
+  greetingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  headerSub: {
-    color: '#C2F0D4',
-    fontSize: 12,
-    marginTop: 4,
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: MATERIAL_COLORS.onPrimary,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: MATERIAL_COLORS.primaryContainer,
+    fontWeight: '500',
   },
 
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: COLORS.outline,
+    borderColor: MATERIAL_COLORS.outline,
     borderWidth: 1,
     borderRadius: 12,
     marginHorizontal: 16,
     marginTop: 16,
     paddingHorizontal: 12,
     height: 46,
-    backgroundColor: COLORS.surface,
+    backgroundColor: MATERIAL_COLORS.surface,
   },
-  input: { flex: 1, marginLeft: 8, fontSize: 15, color: COLORS.textPrimary },
+  input: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 15,
+    color: MATERIAL_COLORS.textPrimary,
+  },
 
   recentBtn: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: MATERIAL_COLORS.primary,
     marginHorizontal: 16,
     marginVertical: 14,
     paddingVertical: 14,
@@ -228,7 +252,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   recentText: {
-    color: COLORS.onPrimary,
+    color: MATERIAL_COLORS.onPrimary,
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '700',
@@ -237,32 +261,46 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 14,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: MATERIAL_COLORS.surface,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.outline,
+    borderColor: MATERIAL_COLORS.outline,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 3,
   },
 
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatar: { width: 52, height: 52, borderRadius: 26, marginRight: 14 },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+  },
 
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: MATERIAL_COLORS.textPrimary,
   },
-  phone: { color: COLORS.textSecondary, marginTop: 2 },
+  phone: { color: MATERIAL_COLORS.textSecondary, marginTop: 2 },
   timeText: { color: '#888', fontSize: 12, marginTop: 4 },
 
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between' },
 
   btnSmall: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 4,
   },
-  btnSmallText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  btnSmallText: {
+    color: MATERIAL_COLORS.onPrimary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
 });
